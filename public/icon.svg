@@ -1,0 +1,10 @@
+<!-- Icone do app (PWA). SVG vetorial: nitido em qualquer tamanho de tela.
+     Fundo escuro "casa de show" com a inicial "P" em roxo de palco. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#0E0B12"/>
+  <text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle"
+        font-family="'Bricolage Grotesque', system-ui, sans-serif"
+        font-size="300" font-weight="800" fill="#B66EFF">P</text>
+  <!-- Ponto roxo que ecoa a logo "Pauta." -->
+  <circle cx="372" cy="332" r="26" fill="#B66EFF"/>
+</svg>

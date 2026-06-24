@@ -1,0 +1,21 @@
+/* As tres diretivas abaixo injetam o CSS do Tailwind:
+   - base: reset + estilos padrao
+   - components: classes de componentes (se criarmos)
+   - utilities: as classes utilitarias (bg-, text-, p-, flex...) */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Estilo base do app: fundo escuro e texto claro em todas as telas.
+   Definimos no body pra valer como padrao global "casa de show". */
+@layer base {
+  html,
+  body {
+    height: 100%;
+  }
+  body {
+    @apply bg-ink-deep text-text font-sans antialiased;
+    /* Evita o flash azul de toque no celular ao tocar em botoes. */
+    -webkit-tap-highlight-color: transparent;
+  }
+}
