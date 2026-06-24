@@ -1,0 +1,19 @@
+# Dependencias instaladas (sao reconstruidas com "npm install", nao versionamos)
+/node_modules
+
+# Build do Next.js
+/.next
+/out
+
+# Variaveis de ambiente (segredos: NUNCA vao pro git)
+.env
+.env.local
+.env*.local
+
+# Logs e arquivos de sistema
+npm-debug.log*
+.DS_Store
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
