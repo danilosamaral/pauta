@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Pauta — protótipo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#161219; --ink-deep:#0E0B12; --surface:#211B28; --surface-2:#2A2233;
+    --line:#392F45; --text:#F2ECF5; --dim:#A296B0;
+    --brand:#B66EFF; --brand-ink:#1c0f2b;
+    --free:#43D17A; --maybe:#F2C14E; --busy:#E5564E; --radius:18px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{background:var(--ink-deep);color:var(--text);font-family:"Hanken Grotesk",system-ui,sans-serif;
+    display:flex;justify-content:center;min-height:100dvh}
+  .phone{width:100%;max-width:430px;background:var(--ink);position:relative;
+    display:flex;flex-direction:column;min-height:100dvh;overflow:hidden}
+  @media(min-width:480px){body{align-items:center;padding:24px}
+    .phone{min-height:880px;height:880px;border-radius:38px;
+      box-shadow:0 0 0 10px #060409, 0 40px 80px -20px rgba(0,0,0,.8);border:1px solid #2b2233}}
+
+  header.app{padding:22px 20px 14px;display:flex;align-items:flex-end;justify-content:space-between;
+    border-bottom:1px solid var(--line);background:linear-gradient(180deg,#231a2e 0%, var(--ink) 100%)}
+  .brand{display:flex;flex-direction:column;gap:1px}
+  .brand h1{font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:27px;letter-spacing:-.02em;line-height:1;color:var(--text)}
+  .brand h1 .dot{color:var(--brand)}
+  .brand span{font-size:12px;color:var(--dim)}
+  .me{width:38px;height:38px;border-radius:50%;background:radial-gradient(circle at 30% 30%, #c98bff, #7d3fd6);
+    display:grid;place-items:center;font-weight:700;font-size:14px;color:#fff;border:1px solid rgba(255,255,255,.15)}
+
+  main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:90px}
+  .view{display:none;animation:fade .25s ease}
+  .view.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+  .pad{padding:18px 20px}
+  .eyebrow{font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-bottom:6px}
+  .screen-title{font-family:"Bricolage Grotesque",sans-serif;font-weight:700;font-size:22px;letter-spacing:-.01em}
+  .screen-sub{color:var(--dim);font-size:13.5px;margin-top:4px;line-height:1.5}
+
+  .legend{display:flex;gap:15px;margin:14px 0 4px;flex-wrap:wrap}
+  .legend div{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--dim)}
+  .led{width:11px;height:11px;border-radius:50%;flex:none}
+  .led.free{background:var(--free);box-shadow:0 0 8px -1px var(--free)}
+  .led.maybe{background:var(--maybe);box-shadow:0 0 8px -1px var(--maybe)}
+  .led.busy{background:var(--busy);box-shadow:0 0 8px -1px var(--busy)}
+  .led.res{background:var(--brand);box-shadow:0 0 8px -1px var(--brand)}
+
+  .cal-head{display:flex;align-items:center;justify-content:space-between;margin:6px 0 10px}
+  .cal-head .month{font-family:"Bricolage Grotesque",sans-serif;font-weight:700;font-size:17px}
+  .cal-head button{background:var(--surface);border:1px solid var(--line);color:var(--text);width:32px;height:32px;border-radius:10px;font-size:16px;cursor:pointer}
+  .weekdays{display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:6px}
+  .weekdays span{text-align:center;font-family:"JetBrains Mono",monospace;font-size:10.5px;color:var(--dim);letter-spacing:.04em}
+  .weekdays span.we{color:#cdb0e8}
+  .grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+  .cell{aspect-ratio:1/1.06;border-radius:13px;background:var(--surface);border:1px solid var(--line);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:pointer;position:relative;transition:transform .12s ease, border-color .12s ease}
+  .cell:active{transform:scale(.94)}
+  .cell.blank{background:transparent;border:none;cursor:default}
+  .cell .num{font-family:"JetBrains Mono",monospace;font-size:14px;font-weight:500;color:var(--text)}
+  .cell .pip{width:9px;height:9px;border-radius:50%}
+  .cell.today{border-color:var(--brand)}
+  .cell.today .num{color:#d9b6ff}
+  .lockbadge{position:absolute;top:3px;right:5px;font-size:9px;line-height:1}
+  .cell.s-free{background:rgba(67,209,122,.12);border-color:rgba(67,209,122,.32)}
+  .cell.s-free .pip{background:var(--free);box-shadow:0 0 7px -1px var(--free)}
+  .cell.s-maybe{background:rgba(242,193,78,.13);border-color:rgba(242,193,78,.4)}
+  .cell.s-maybe .pip{background:var(--maybe);box-shadow:0 0 7px -1px var(--maybe)}
+  .cell.s-busy{background:rgba(229,86,78,.13);border-color:rgba(229,86,78,.4)}
+  .cell.s-busy .pip{background:var(--busy);box-shadow:0 0 7px -1px var(--busy)}
+  .cell.b-free{background:rgba(67,209,122,.10)}
+  .cell.b-free .pip{background:var(--free);box-shadow:0 0 10px 0 var(--free);animation:glow 2.6s ease-in-out infinite}
+  .cell.b-maybe .pip{background:var(--maybe);box-shadow:0 0 7px -1px var(--maybe)}
+  .cell.b-busy{opacity:.6}
+  .cell.b-busy .pip{background:var(--busy)}
+  .cell.b-reserved{background:linear-gradient(135deg,#8a4fd6,#6a30b8);border-color:#a877e6}
+  .cell.b-reserved .num{color:#fff;font-weight:700}.cell.b-reserved .pip{background:#fff}
+  @keyframes glow{0%,100%{box-shadow:0 0 6px -1px var(--free)}50%{box-shadow:0 0 13px 1px var(--free)}}
+  @media (prefers-reduced-motion: reduce){.cell.b-free .pip{animation:none}}
+
+  .best{background:linear-gradient(120deg,#241a31,#2c2140);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;margin-bottom:16px}
+  .best .lbl{font-size:11.5px;color:var(--dim);font-family:"JetBrains Mono",monospace;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+  .best .dates{display:flex;gap:8px;flex-wrap:wrap}
+  .best .chip{background:rgba(67,209,122,.14);border:1px solid rgba(67,209,122,.4);color:#9af0bd;border-radius:999px;padding:6px 13px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px}
+  .best .chip .led{width:8px;height:8px}
+  .best .chip.wk{background:rgba(242,193,78,.18);border-color:rgba(242,193,78,.55);color:#f7dd9c}
+
+  .bandcard{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:12px;cursor:pointer;display:flex;gap:14px;align-items:center;transition:border-color .15s ease, transform .12s ease}
+  .bandcard:active{transform:scale(.99)}.bandcard:hover{border-color:#4d3f5e}
+  .bandcard .glyph{width:46px;height:46px;border-radius:13px;flex:none;display:grid;place-items:center;font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:20px;color:#fff}
+  .bandcard .info{flex:1;min-width:0}
+  .bandcard .info .name{font-family:"Bricolage Grotesque",sans-serif;font-weight:700;font-size:17px;display:flex;align-items:center;gap:8px}
+  .role{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:6px;font-family:"JetBrains Mono",monospace}
+  .role.mod{background:rgba(182,110,255,.16);color:#d4aaff;border:1px solid rgba(182,110,255,.35)}
+  .role.mem{background:#2a2233;color:var(--dim);border:1px solid var(--line)}
+  .bandcard .info .next{font-size:13px;color:var(--dim);margin-top:3px}
+  .bandcard .chev{color:var(--dim);font-size:20px}
+  .addband{width:100%;background:transparent;border:1.5px dashed var(--line);color:var(--dim);border-radius:var(--radius);padding:15px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:4px}
+  .addband:hover{border-color:var(--brand);color:#d4aaff}
+
+  .bandhead{padding:16px 20px 6px;display:flex;align-items:center;gap:12px}
+  .back{background:var(--surface);border:1px solid var(--line);color:var(--text);width:36px;height:36px;border-radius:11px;font-size:18px;cursor:pointer;flex:none}
+  .bandhead .glyph{width:40px;height:40px;border-radius:11px;flex:none;display:grid;place-items:center;font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:17px;color:#fff}
+  .bandhead .t{flex:1;min-width:0}
+  .bandhead .t .name{font-family:"Bricolage Grotesque",sans-serif;font-weight:700;font-size:18px;line-height:1.1}
+  .bandhead .t .meta{font-size:12px;color:var(--dim);margin-top:2px}
+  .invite{background:var(--surface);color:var(--text);border:1px solid var(--line);border-radius:11px;padding:0 13px;height:36px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;flex:none}
+
+  .scrim{position:absolute;inset:0;background:rgba(8,5,12,.6);opacity:0;pointer-events:none;transition:opacity .22s ease;z-index:40;backdrop-filter:blur(2px)}
+  .scrim.open{opacity:1;pointer-events:auto}
+  .sheet{position:absolute;left:0;right:0;bottom:0;z-index:50;background:var(--surface);border-top:1px solid var(--line);border-radius:24px 24px 0 0;padding:8px 20px 26px;transform:translateY(105%);transition:transform .28s cubic-bezier(.2,.8,.2,1);max-height:88%;overflow-y:auto}
+  .sheet.open{transform:none}
+  .handle{width:38px;height:4px;border-radius:99px;background:var(--line);margin:8px auto 14px}
+  .sheet h3{font-family:"Bricolage Grotesque",sans-serif;font-weight:700;font-size:19px}
+  .sheet .sub{color:var(--dim);font-size:13px;margin:3px 0 16px}
+
+  .opts{display:flex;flex-direction:column;gap:10px}
+  .opt{display:flex;align-items:center;gap:13px;width:100%;text-align:left;background:var(--surface-2);border:1.5px solid var(--line);border-radius:14px;padding:14px 15px;cursor:pointer;font-family:inherit;color:var(--text);transition:border-color .12s}
+  .opt:active{transform:scale(.99)}.opt .led{width:14px;height:14px}
+  .opt .ot{font-weight:700;font-size:15px}.opt .od{font-size:12.5px;color:var(--dim);margin-top:1px}
+  .opt.sel{border-color:var(--brand)}.opt .col{flex:1}
+  .opt .check{color:var(--brand);font-weight:800;opacity:0}.opt.sel .check{opacity:1}
+  .note{margin-top:14px;display:none}.note.show{display:block}
+  .note label,.field>label{font-size:12px;color:var(--dim);font-family:"JetBrains Mono",monospace;letter-spacing:.05em}
+  .note input,.field input{width:100%;margin-top:7px;background:var(--ink);border:1px solid var(--line);border-radius:11px;padding:12px;color:var(--text);font-family:inherit;font-size:14px}
+  .note input::placeholder,.field input::placeholder{color:#6c6079}
+
+  .rosthead{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+  .rost-pill{font-family:"JetBrains Mono",monospace;font-size:11px;padding:3px 9px;border-radius:7px;font-weight:700}
+  .rost-pill.free{background:rgba(67,209,122,.14);color:#9af0bd}
+  .rost-pill.maybe{background:rgba(242,193,78,.14);color:#f6d893}
+  .rost-pill.busy{background:rgba(229,86,78,.14);color:#f3a39e}
+  .rost-pill.res{background:rgba(182,110,255,.16);color:#d4aaff}
+  .rgroup{margin-top:16px}
+  .rgroup .gl{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;font-family:"JetBrains Mono",monospace;margin-bottom:9px}
+  .person{display:flex;align-items:center;gap:11px;padding:7px 0}
+  .av{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;color:#fff;flex:none}
+  .person .pn{font-size:14.5px;font-weight:500}
+  .person .pnote{font-size:12px;color:var(--dim)}
+  .pact{display:flex;gap:6px;flex:none}
+  .pact button{background:var(--surface);border:1px solid var(--line);color:var(--dim);font-family:inherit;font-size:11.5px;font-weight:600;padding:6px 9px;border-radius:8px;cursor:pointer}
+  .pact button:hover{border-color:var(--brand);color:#d4aaff}
+  .subbox{display:flex;gap:6px;flex:none;align-items:center}
+  .subbox input{width:120px;background:var(--ink);border:1px solid var(--line);border-radius:8px;padding:7px 9px;color:var(--text);font-family:inherit;font-size:12.5px}
+  .subbox .ok{background:var(--brand);border:none;color:#fff;font-weight:700;border-radius:8px;padding:7px 11px;cursor:pointer;font-family:inherit;font-size:12.5px}
+  .undo{background:none;border:1px solid var(--line);color:var(--dim);font-family:inherit;font-size:11.5px;border-radius:8px;padding:6px 9px;cursor:pointer;flex:none}
+  .zaphint{margin-top:18px;background:var(--brand-ink);border:1px solid rgba(182,110,255,.3);border-radius:13px;padding:12px 14px;font-size:13px;color:#d9c2f5;line-height:1.5}
+  .zaphint b{color:#eaddff}
+
+  .btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;border:none;border-radius:13px;padding:14px;font-family:inherit;font-weight:700;font-size:14.5px;cursor:pointer;text-decoration:none}
+  .btn.primary{background:var(--brand);color:#fff}
+  .btn.ghost{background:var(--surface-2);color:var(--text);border:1px solid var(--line)}
+  .btn.danger{background:rgba(229,86,78,.12);color:#f3a39e;border:1px solid rgba(229,86,78,.35)}
+  .btnrow{display:flex;gap:10px;margin-top:14px}.btnrow .btn{flex:1}
+  .seg{display:flex;background:var(--ink);border:1px solid var(--line);border-radius:12px;padding:4px;gap:4px;margin-top:7px}
+  .seg button{flex:1;background:none;border:none;color:var(--dim);font-family:inherit;font-weight:600;font-size:13.5px;padding:9px;border-radius:9px;cursor:pointer}
+  .seg button.on{background:var(--brand);color:#fff}
+  .field{margin-top:15px}
+  .seghelp{font-size:12px;color:var(--dim);margin-top:8px;line-height:1.45}
+  .eventcard{background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:15px;margin-top:6px}
+  .eventcard .row{display:flex;gap:10px;align-items:center;font-size:14px;margin-top:9px}
+  .eventcard .row:first-child{margin-top:0}.eventcard .ic{width:18px;text-align:center;opacity:.85;flex:none}
+  .sharebox{background:#0c1410;border:1px solid #1f3a2a;border-radius:14px;border-bottom-left-radius:4px;padding:14px;font-size:13.5px;line-height:1.55;white-space:pre-wrap;color:#dceae0;margin-top:6px}
+  .toast{position:absolute;left:50%;bottom:100px;transform:translateX(-50%) translateY(10px);background:#fff;color:#161219;font-weight:700;font-size:13px;padding:10px 16px;border-radius:99px;opacity:0;transition:all .25s;z-index:95;pointer-events:none}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  nav.tabs{position:absolute;left:0;right:0;bottom:0;z-index:30;background:rgba(22,18,25,.92);backdrop-filter:blur(12px);border-top:1px solid var(--line);display:flex;padding:9px 0 calc(9px + env(safe-area-inset-bottom))}
+  nav.tabs button{flex:1;background:none;border:none;cursor:pointer;font-family:inherit;color:var(--dim);display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;font-weight:600}
+  nav.tabs button.on{color:var(--brand)}
+  nav.tabs svg{width:23px;height:23px;stroke:currentColor;fill:none;stroke-width:1.9}
+  nav.tabs button.on svg{stroke:var(--brand)}
+
+  /* login */
+  .login{position:absolute;inset:0;z-index:90;background:linear-gradient(180deg,#1b1424,#0E0B12);display:flex;align-items:center;justify-content:center;padding:28px}
+  .login-inner{width:100%;max-width:330px;display:flex;flex-direction:column}
+  .login-lead{color:var(--text);font-size:15px;line-height:1.5;margin:26px 0 16px;text-align:center}
+  .login label{font-size:12px;color:var(--dim);font-family:"JetBrains Mono",monospace}
+  .phone-input{display:flex;align-items:center;gap:8px;background:var(--ink);border:1px solid var(--line);border-radius:12px;padding:2px 12px;margin:8px 0 16px}
+  .phone-input span{color:var(--dim);font-weight:700;font-size:15px;border-right:1px solid var(--line);padding-right:10px}
+  .phone-input input{flex:1;background:none;border:none;color:var(--text);font-family:inherit;font-size:16px;padding:13px 0;outline:none}
+  .otp-input{width:100%;text-align:center;letter-spacing:.45em;font-size:24px;font-family:"JetBrains Mono",monospace;background:var(--ink);border:1px solid var(--line);border-radius:12px;padding:14px;color:var(--text);margin:8px 0 16px;outline:none}
+  .login-fine{font-size:12px;color:var(--dim);text-align:center;margin-top:14px;line-height:1.6}
+  .login-fine a{color:var(--brand);cursor:pointer}
+  .wa-badge{display:flex;align-items:center;justify-content:center;gap:7px;color:#7ee0a3;font-size:12.5px;font-weight:600;margin-top:2px}
+  .linkbox{background:var(--ink);border:1px dashed var(--line);border-radius:10px;padding:11px 13px;font-family:"JetBrains Mono",monospace;font-size:13px;color:#d4aaff;word-break:break-all}
+  .crown{font-size:12px}
+  .mng-tag{font-family:"JetBrains Mono",monospace;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 7px;border-radius:6px;background:rgba(182,110,255,.16);color:#d4aaff;border:1px solid rgba(182,110,255,.35);margin-left:6px}
+</style>
+</head>
+<body>
+<div class="phone">
+
+  <header class="app">
+    <div class="brand"><h1>Pauta<span class="dot">.</span></h1><span>a agenda que toca junto</span></div>
+    <div class="me">RA</div>
+  </header>
+
+  <main id="main">
+    <!-- MINHA AGENDA -->
+    <section class="view active" id="v-agenda">
+      <div class="pad">
+        <div class="eyebrow">Minha agenda</div>
+        <div class="screen-title">Sua disponibilidade</div>
+        <div class="screen-sub">Os dias começam livres (verde). Toque só pra avisar quando estiver ocupado ou em dúvida.</div>
+        <div class="legend">
+          <div><span class="led free"></span> Livre</div><div><span class="led maybe"></span> Talvez</div>
+          <div><span class="led busy"></span> Ocupado</div><div><span class="led res"></span> 🔒 Banda</div>
+        </div>
+      </div>
+      <div class="pad" style="padding-top:0">
+        <div class="cal-head"><span class="month">Junho 2026</span><div style="display:flex;gap:8px"><button>‹</button><button>›</button></div></div>
+        <div class="weekdays" id="wd-me"></div>
+        <div class="grid" id="grid-me"></div>
+      </div>
+    </section>
+
+    <!-- BANDAS -->
+    <section class="view" id="v-bands">
+      <div class="pad">
+        <div class="eyebrow">Bandas</div><div class="screen-title">Seus grupos</div>
+        <div class="screen-sub">Abra uma banda pra ver as datas que funcionam pra todo mundo.</div>
+      </div>
+      <div class="pad" style="padding-top:4px" id="bandlist"></div>
+    </section>
+
+    <!-- CALENDÁRIO DA BANDA -->
+    <section class="view" id="v-band">
+      <div class="bandhead">
+        <button class="back" id="backBtn">‹</button>
+        <div class="glyph" id="bh-glyph"></div>
+        <div class="t"><div class="name" id="bh-name"></div><div class="meta" id="bh-meta"></div></div>
+        <button class="invite" id="inviteBtn">Gerir</button>
+      </div>
+      <div class="pad" style="padding-top:10px">
+        <div class="best"><div class="lbl">Datas livres pra todos · ⭐ fim de semana</div><div class="dates" id="best-dates"></div></div>
+        <div class="legend" style="margin-top:0">
+          <div><span class="led free"></span> Todos livres</div><div><span class="led maybe"></span> "talvez"</div>
+          <div><span class="led busy"></span> Alguém ocupado</div><div><span class="led res"></span> Marcado</div>
+        </div>
+        <div class="cal-head"><span class="month">Junho 2026</span><div style="display:flex;gap:8px"><button>‹</button><button>›</button></div></div>
+        <div class="weekdays" id="wd-band"></div>
+        <div class="grid" id="grid-band"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- SHEET minha agenda -->
+  <div class="scrim" id="scrimMe"></div>
+  <div class="sheet" id="sheetMe">
+    <div class="handle"></div><h3 id="me-title"></h3>
+    <div id="meLocked" style="display:none"></div>
+    <div id="meEditor">
+      <div class="sub">Como está esse dia pra você?</div>
+      <div class="opts">
+        <button class="opt" data-st="free"><span class="led free"></span><span class="col"><span class="ot">Livre</span><span class="od">Pode marcar à vontade</span></span><span class="check">✓</span></button>
+        <button class="opt" data-st="maybe"><span class="led maybe"></span><span class="col"><span class="ot">Talvez</span><span class="od">Ocupado, mas dá pra conversar</span></span><span class="check">✓</span></button>
+        <button class="opt" data-st="busy"><span class="led busy"></span><span class="col"><span class="ot">Ocupado</span><span class="od">Esse dia não rola</span></span><span class="check">✓</span></button>
+      </div>
+      <div class="note" id="meNote"><label>Recado pras bandas (opcional)</label><input type="text" placeholder="ex: posso remarcar o outro compromisso"></div>
+    </div>
+  </div>
+
+  <!-- SHEET roster/evento -->
+  <div class="scrim" id="scrimBand"></div>
+  <div class="sheet" id="sheetBand">
+    <div class="handle"></div><div class="rosthead"><h3 id="rost-title"></h3></div>
+    <div class="sub" id="rost-sub"></div><div id="rost-body"></div>
+  </div>
+
+  <!-- SHEET reservar -->
+  <div class="scrim" id="scrimRes"></div>
+  <div class="sheet" id="sheetRes">
+    <div class="handle"></div><h3 id="res-title">Reservar data</h3><div class="sub" id="res-sub"></div>
+    <div class="field" style="margin-top:4px"><label>O que é</label>
+      <div class="seg" id="seg-tipo"><button data-v="ensaio" class="on">🎸 Ensaio</button><button data-v="show">🎤 Apresentação</button></div></div>
+    <div class="field"><label>Local</label><input id="res-local" type="text" placeholder="ex: Bar do Zé / Sala de ensaio"></div>
+    <div class="field"><label>Hora de início</label><input id="res-hora" type="time" value="20:00"></div>
+    <div class="field"><label>Como travar</label>
+      <div class="seg" id="seg-hold"><button data-v="full" class="on">Travar o dia</button><button data-v="partial">Reserva parcial</button></div>
+      <div class="seghelp" id="hold-help"></div></div>
+    <div class="btnrow"><button class="btn ghost" id="res-cancel">Voltar</button><button class="btn primary" id="res-confirm">Reservar e travar</button></div>
+  </div>
+
+  <!-- SHEET compartilhar -->
+  <div class="scrim" id="scrimShare"></div>
+  <div class="sheet" id="sheetShare">
+    <div class="handle"></div><h3>Confirmado! 🎉</h3>
+    <div class="sub">Manda no grupo pra ninguém esquecer — e deixa todo mundo salvar na agenda.</div>
+    <div class="sharebox" id="share-text"></div>
+    <button class="btn primary" id="share-send" style="margin-top:14px">Compartilhar no WhatsApp</button>
+    <div class="btnrow"><a class="btn ghost" id="share-gcal" target="_blank" rel="noopener">📅 Google Agenda</a><button class="btn ghost" id="share-ics">🍎 iPhone (.ics)</button></div>
+    <button class="btn ghost" id="share-copy" style="margin-top:10px">Copiar texto</button>
+  </div>
+
+  <!-- SHEET gerir banda -->
+  <div class="scrim" id="scrimMng"></div>
+  <div class="sheet" id="sheetMng">
+    <div class="handle"></div><h3 id="mng-title">Integrantes</h3><div class="sub" id="mng-sub"></div><div id="mng-body"></div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <nav class="tabs">
+    <button id="tab-agenda" class="on" onclick="go('agenda')">
+      <svg viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M3 9h18M8 2.5v4M16 2.5v4"/></svg>Minha agenda</button>
+    <button id="tab-bands" onclick="go('bands')">
+      <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/><path d="M16 6.2a3 3 0 0 1 0 5.6M17.5 19c0-2.2-1-3.8-2.5-4.6"/></svg>Bandas</button>
+  </nav>
+
+  <!-- LOGIN -->
+  <div class="login" id="login">
+    <div class="login-inner">
+      <div class="brand" style="align-items:center;text-align:center"><h1 style="font-size:42px">Pauta<span class="dot">.</span></h1><span>a agenda que toca junto</span></div>
+      <div id="login-step1">
+        <p class="login-lead">Entre com seu número de WhatsApp.<br>É ele que conecta você às suas bandas.</p>
+        <label>Seu número</label>
+        <div class="phone-input"><span>🇧🇷 +55</span><input id="ph" inputmode="tel" placeholder="(67) 99999-9999" value="(67) 99999-9999"></div>
+        <button class="btn primary" id="send-code">Enviar código</button>
+        <div class="wa-badge">✓ código enviado pelo WhatsApp</div>
+        <p class="login-fine">Sem senha. Você só confirma que o número é seu.</p>
+      </div>
+      <div id="login-step2" style="display:none">
+        <p class="login-lead">Enviamos um código de 6 dígitos<br>pro seu WhatsApp.</p>
+        <label>Código</label>
+        <input id="otp" class="otp-input" inputmode="numeric" maxlength="6" placeholder="••••••">
+        <button class="btn primary" id="verify-code">Entrar</button>
+        <p class="login-fine"><a id="resend">Reenviar código</a> &nbsp;·&nbsp; <a id="back-phone">Mudar número</a></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   DADOS — disponibilidade é DA PESSOA (o telefone é a chave única)
+========================================================= */
+const COLORS={maraca:'linear-gradient(135deg,#ff8a5b,#e5564e)',fronteira:'linear-gradient(135deg,#43d17a,#2aa6c4)',zeca:'linear-gradient(135deg,#b66eff,#7d3fd6)'};
+const BANDS=[
+  {id:'maraca',name:'Maracá',mods:['Você'],members:['Você','Maria','Pedro','Ana','Carlos'],next:'você é moderador'},
+  {id:'fronteira',name:'Trio da Fronteira',mods:['João'],members:['Você','João','Léo'],next:'você é membro'},
+  {id:'zeca',name:'Seresta do Zeca',mods:['Zeca'],members:['Você','Bia','Pedro','Zeca'],next:'você é membro'}
+];
+const INSTR={
+  maraca:{'Você':'baixo','Maria':'voz','Pedro':'guitarra','Ana':'teclado','Carlos':'bateria'},
+  fronteira:{'Você':'baixo','João':'violão e voz','Léo':'percussão'},
+  zeca:{'Você':'baixo','Bia':'voz','Pedro':'guitarra','Zeca':'acordeon'}
+};
+const PEOPLE={
+  'Você':{6:['busy'],11:['maybe','posso remarcar'],13:['busy'],20:['maybe'],21:['busy']},
+  'Maria':{13:['busy'],28:['maybe']},'Pedro':{11:['maybe','posso remarcar'],21:['busy'],18:['maybe']},
+  'Ana':{11:['maybe'],20:['maybe']},'Carlos':{6:['busy'],21:['busy']},
+  'João':{14:['maybe'],27:['busy']},'Léo':{7:['busy']},'Bia':{5:['busy']},'Zeca':{18:['maybe']}
+};
+let RES=[];  // reservas {bandId,day,tipo,local,hora,hold}
+let ADJ=[];  // ajustes do moderador {bandId,day,member,kind:'out'|'sub',guest}
+
+const MONTH={y:2026,m:5}, TODAY=24;
+const WD=['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
+const WDS=['DOM','SEG','TER','QUA','QUI','SEX','SÁB'];
+const avColor=['#e5564e','#f2c14e','#43d17a','#b66eff','#2aa6c4','#ff8a5b','#7d3fd6'];
+const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
+const pad=n=>String(n).padStart(2,'0');
+const firstWeekday=()=>new Date(MONTH.y,MONTH.m,1).getDay();
+const daysInMonth=()=>new Date(MONTH.y,MONTH.m+1,0).getDate();
+const weekday=d=>new Date(MONTH.y,MONTH.m,d).getDay();
+const isWeekend=d=>{const w=weekday(d);return w===5||w===6;}; // sexta ou sábado
+const longDate=d=>cap(WD[weekday(d)])+', '+d+' de junho';
+const instOf=(bandId,m)=>(INSTR[bandId]&&INSTR[bandId][m])||'';
+const adjOf=(bandId,day,member)=>ADJ.find(a=>a.bandId===bandId&&a.day===day&&a.member===member)||null;
+const userIsMod=bandId=>BANDS.find(b=>b.id===bandId).mods.includes('Você');
+const hash=s=>{let h=0;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))|0;return h;};
+
+function buildWeekdays(){
+  [['wd-me'],['wd-band']].forEach(([id])=>{
+    const el=document.getElementById(id); el.innerHTML='';
+    WDS.forEach((w,i)=>{const s=document.createElement('span');s.textContent=w;if(i===5||i===6)s.className='we';el.appendChild(s);});
+  });
+}
+
+/* navegação */
+let currentBand=null;
+function go(view){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('tab-agenda').classList.toggle('on',view==='agenda');
+  document.getElementById('tab-bands').classList.toggle('on',view!=='agenda');
+  document.getElementById(view==='agenda'?'v-agenda':view==='bands'?'v-bands':'v-band').classList.add('active');
+}
+
+/* =========================================================
+   MOTOR DE DISPONIBILIDADE
+========================================================= */
+function memberState(member,d,exceptBandId){
+  const p=PEOPLE[member]&&PEOPLE[member][d];
+  let st=p?p[0]:'free', note=(p&&p[1])?p[1]:null;
+  for(const r of RES){
+    if(r.bandId===exceptBandId||r.day!==d) continue;
+    const b=BANDS.find(x=>x.id===r.bandId);
+    if(!b.members.includes(member)) continue;
+    if(adjOf(r.bandId,d,member)) continue;          // a banda toca sem ele / com substituto → não trava
+    if(r.hold==='full'){st='busy';note='comprometido com outra banda';break;}
+    else if(st!=='busy'){st='maybe';note='comprometido com outra banda';}
+  }
+  return {member,st,note};
+}
+function dayState(bandId,d){
+  const own=RES.find(r=>r.bandId===bandId&&r.day===d);
+  if(own) return {agg:'reserved',res:own};
+  const band=BANDS.find(b=>b.id===bandId);
+  const free=[],maybe=[],busy=[],guests=[],outs=[],subs=[];
+  for(const m of band.members){
+    const a=adjOf(bandId,d,m);
+    if(a&&a.kind==='out'){outs.push({member:m,inst:instOf(bandId,m)});continue;}
+    if(a&&a.kind==='sub'){subs.push({member:m,guest:a.guest,inst:instOf(bandId,m)});guests.push({name:a.guest,inst:instOf(bandId,m),replaces:m});continue;}
+    const s=memberState(m,d,bandId);
+    (s.st==='busy'?busy:s.st==='maybe'?maybe:free).push(s);
+  }
+  let agg='free'; if(maybe.length)agg='maybe'; if(busy.length)agg='busy';
+  return {agg,free,maybe,busy,guests,outs,subs};
+}
+function myCommit(d){
+  for(const r of RES){
+    const b=BANDS.find(x=>x.id===r.bandId);
+    if(b.members.includes('Você')&&r.day===d&&!adjOf(r.bandId,d,'Você')) return r;
+  }
+  return null;
+}
+const myState=d=>{const c=myCommit(d);if(c)return c.hold==='full'?'busy':'maybe';const p=PEOPLE['Você'][d];return p?p[0]:'free';};
+
+/* =========================================================
+   TELA 1 — MINHA AGENDA
+========================================================= */
+function buildMyGrid(){
+  const g=document.getElementById('grid-me');g.innerHTML='';
+  for(let i=0;i<firstWeekday();i++){const b=document.createElement('div');b.className='cell blank';g.appendChild(b);}
+  for(let d=1;d<=daysInMonth();d++){
+    const st=myState(d),lock=myCommit(d);
+    const c=document.createElement('div');
+    c.className='cell s-'+st+(d===TODAY?' today':'');
+    c.innerHTML=`${lock?'<span class="lockbadge">🔒</span>':''}<span class="num">${d}</span><span class="pip"></span>`;
+    c.onclick=()=>openMe(d); g.appendChild(c);
+  }
+}
+const scrimMe=document.getElementById('scrimMe'),sheetMe=document.getElementById('sheetMe');
+let meDay=null;
+function openMe(d){
+  meDay=d; document.getElementById('me-title').textContent=longDate(d);
+  const lock=myCommit(d),ed=document.getElementById('meEditor'),lk=document.getElementById('meLocked');
+  if(lock){
+    ed.style.display='none';lk.style.display='block';
+    const b=BANDS.find(x=>x.id===lock.bandId),ic=lock.tipo==='show'?'🎤':'🎸',tl=lock.tipo==='show'?'Apresentação':'Ensaio';
+    lk.innerHTML=`<div class="sub" style="margin-bottom:6px">Você tem compromisso marcado nesse dia:</div>
+      <div class="eventcard">
+        <div class="row"><span class="ic">${ic}</span> <b>${b.name}</b>&nbsp;·&nbsp;${tl}</div>
+        <div class="row"><span class="ic">📍</span> ${lock.local||'local a definir'}</div>
+        <div class="row"><span class="ic">🕘</span> ${lock.hora}</div>
+        <div class="row"><span class="ic">${lock.hold==='full'?'🔒':'🟡'}</span> ${lock.hold==='full'?'Dia travado — outras bandas veem ocupado':'Parcial — ainda dá pra encaixar outra banda'}</div>
+      </div><div class="seghelp">Marcado pelo moderador. Pra mudar, fale no grupo.</div>`;
+  }else{
+    ed.style.display='block';lk.style.display='none';
+    const cur=(PEOPLE['Você'][d]?PEOPLE['Você'][d][0]:'free');
+    document.querySelectorAll('#sheetMe .opt').forEach(o=>o.classList.toggle('sel',o.dataset.st===cur));
+    document.getElementById('meNote').classList.toggle('show',cur==='maybe');
+  }
+  scrimMe.classList.add('open');sheetMe.classList.add('open');
+}
+const closeMe=()=>{scrimMe.classList.remove('open');sheetMe.classList.remove('open');};
+scrimMe.onclick=closeMe;
+document.querySelectorAll('#sheetMe .opt').forEach(o=>o.onclick=()=>{
+  const st=o.dataset.st;
+  document.querySelectorAll('#sheetMe .opt').forEach(x=>x.classList.remove('sel'));o.classList.add('sel');
+  document.getElementById('meNote').classList.toggle('show',st==='maybe');
+  if(st==='free')delete PEOPLE['Você'][meDay]; else PEOPLE['Você'][meDay]=[st,st==='maybe'?'posso remarcar':null];
+  buildMyGrid(); if(st!=='maybe')setTimeout(closeMe,180);
+});
+
+/* =========================================================
+   TELA 3 — CALENDÁRIO DA BANDA
+========================================================= */
+function openBand(bandId){
+  currentBand=bandId;const b=BANDS.find(x=>x.id===bandId);
+  document.getElementById('bh-glyph').style.background=COLORS[bandId];
+  document.getElementById('bh-glyph').textContent=b.name[0];
+  document.getElementById('bh-name').textContent=b.name;
+  document.getElementById('bh-meta').textContent=b.members.length+' integrantes · '+(userIsMod(bandId)?'você é moderador':'você é membro');
+  document.getElementById('inviteBtn').style.display=userIsMod(bandId)?'':'none';
+  renderBandGrid(bandId);go('band');
+}
+function renderBandGrid(bandId){
+  const g=document.getElementById('grid-band');g.innerHTML='';
+  for(let i=0;i<firstWeekday();i++){const x=document.createElement('div');x.className='cell blank';g.appendChild(x);}
+  const best=[];
+  for(let d=1;d<=daysInMonth();d++){
+    const st=dayState(bandId,d); if(st.agg==='free')best.push(d);
+    const c=document.createElement('div');
+    c.className='cell b-'+st.agg+(d===TODAY?' today':'');
+    c.innerHTML=`${st.agg==='reserved'?'<span class="lockbadge">🔒</span>':''}<span class="num">${d}</span><span class="pip"></span>`;
+    c.onclick=()=>openRoster(bandId,d); g.appendChild(c);
+  }
+  const bd=document.getElementById('best-dates');bd.innerHTML='';
+  // fim de semana primeiro, depois por data
+  let up=best.filter(d=>d>=TODAY).sort((a,b)=>(isWeekend(b)-isWeekend(a))||(a-b)).slice(0,6);
+  if(up.length){
+    up.forEach(d=>{
+      const wd=WD[weekday(d)].slice(0,3),we=isWeekend(d);
+      const chip=document.createElement('span');chip.className='chip'+(we?' wk':'');
+      chip.innerHTML=`${we?'⭐':'<span class="led free"></span>'}${d} <span style="opacity:.65">${wd}</span>`;
+      chip.onclick=()=>openRoster(bandId,d); bd.appendChild(chip);
+    });
+  }else bd.innerHTML='<span style="color:var(--dim);font-size:13px">Sem data 100% livre por enquanto — veja as amarelas no calendário.</span>';
+}
+
+/* sheet roster/evento */
+const scrimBand=document.getElementById('scrimBand'),sheetBand=document.getElementById('sheetBand');
+function refreshRoster(bandId,d){openRoster(bandId,d);renderBandGrid(bandId);buildMyGrid();}
+function shell(label,count,kind){
+  const w=document.createElement('div');w.className='rgroup';
+  w.innerHTML=`<div class="gl">${kind==='adj'?'🔧':`<span class="led ${kind}"></span>`}${label}${count!=null?' · '+count:''}</div>`;
+  return w;
+}
+function personRow(o,ctx){
+  const n=o.member,initials=n==='Você'?'VC':n.slice(0,2).toUpperCase(),col=avColor[n.charCodeAt(0)%avColor.length];
+  const inst=instOf(ctx.bandId,n),sub=o.note?'“'+o.note+'”':(inst||'');
+  const row=document.createElement('div');row.className='person';
+  row.innerHTML=`<span class="av" style="background:${col}">${initials}</span><div style="flex:1"><div class="pn">${n}</div>${sub?`<div class="pnote">${sub}</div>`:''}</div>`;
+  if(ctx.isMod&&ctx.actionable){
+    const act=document.createElement('div');act.className='pact';
+    act.innerHTML=`<button data-a="out">Tocar sem</button><button data-a="sub">Substituir</button>`;
+    act.querySelector('[data-a="out"]').onclick=()=>{ADJ.push({bandId:ctx.bandId,day:ctx.day,member:n,kind:'out'});refreshRoster(ctx.bandId,ctx.day);};
+    act.querySelector('[data-a="sub"]').onclick=()=>startSub(ctx.bandId,ctx.day,n,row);
+    row.appendChild(act);
+  }
+  return row;
+}
+function startSub(bandId,day,member,row){
+  const old=row.querySelector('.pact');if(old)old.remove();
+  const box=document.createElement('div');box.className='subbox';
+  box.innerHTML=`<input placeholder="convidado (${instOf(bandId,member)})"><button class="ok">OK</button>`;
+  const inp=box.querySelector('input');
+  box.querySelector('.ok').onclick=()=>{ADJ.push({bandId,day,member,kind:'sub',guest:inp.value.trim()||'Convidado'});refreshRoster(bandId,day);};
+  inp.addEventListener('keydown',e=>{if(e.key==='Enter')box.querySelector('.ok').click();});
+  row.appendChild(box);inp.focus();
+}
+function guestRow(g){
+  const initials='+';const row=document.createElement('div');row.className='person';
+  row.innerHTML=`<span class="av" style="background:#2aa6c4">${initials}</span><div style="flex:1"><div class="pn">${g.name}</div><div class="pnote">convidado · ${g.inst} (no lugar de ${g.replaces})</div></div>`;
+  return row;
+}
+function adjRow(bandId,day,member,text){
+  const r=document.createElement('div');r.className='person';
+  r.innerHTML=`<span class="av" style="background:#392F45;font-size:13px">🔧</span><div style="flex:1"><div class="pn" style="font-size:13.5px">${text}</div></div>`;
+  const u=document.createElement('button');u.className='undo';u.textContent='desfazer';
+  u.onclick=()=>{ADJ=ADJ.filter(a=>!(a.bandId===bandId&&a.day===day&&a.member===member));refreshRoster(bandId,day);};
+  r.appendChild(u);return r;
+}
+function openRoster(bandId,d){
+  const st=dayState(bandId,d);
+  document.getElementById('rost-title').textContent=longDate(d);
+  const sub=document.getElementById('rost-sub'),body=document.getElementById('rost-body');body.innerHTML='';
+  if(st.agg==='reserved'){renderEvent(bandId,d,st.res);scrimBand.classList.add('open');sheetBand.classList.add('open');return;}
+  const b=BANDS.find(x=>x.id===bandId),isMod=userIsMod(bandId);
+  sub.innerHTML = st.agg==='free'?'<span class="rost-pill free">DATA LIVRE</span> todo mundo pode'
+    : st.agg==='maybe'?'<span class="rost-pill maybe">DÁ PRA TENTAR</span> tem gente pra confirmar'
+    : '<span class="rost-pill busy">ALGUÉM OCUPADO</span> provavelmente não rola';
+
+  if(st.busy.length){const w=shell('Ocupado',st.busy.length,'busy');st.busy.forEach(o=>w.appendChild(personRow(o,{bandId,day:d,isMod,actionable:true})));body.appendChild(w);}
+  if(st.maybe.length){const w=shell('Talvez',st.maybe.length,'maybe');st.maybe.forEach(o=>w.appendChild(personRow(o,{bandId,day:d,isMod,actionable:true})));body.appendChild(w);}
+  const livreN=st.free.length+st.guests.length;
+  if(livreN){const w=shell('Livre',livreN,'free');st.free.forEach(o=>w.appendChild(personRow(o,{bandId,day:d,isMod,actionable:false})));st.guests.forEach(g=>w.appendChild(guestRow(g)));body.appendChild(w);}
+  if(st.outs.length||st.subs.length){
+    const w=shell('Ajustes do moderador',null,'adj');
+    st.outs.forEach(o=>w.appendChild(adjRow(bandId,d,o.member,o.member+' — fora nesse dia ('+o.inst+')')));
+    st.subs.forEach(s=>w.appendChild(adjRow(bandId,d,s.member,s.member+' → '+s.guest+' ('+s.inst+')')));
+    body.appendChild(w);
+  }
+  if(st.agg!=='free'){
+    const who=[...st.busy,...st.maybe].map(x=>x.member).join(', ');
+    const tip=document.createElement('div');tip.className='zaphint';
+    tip.innerHTML= st.agg==='maybe'?`Essa data <b>pode rolar</b>. Chama ${who} no grupo pra confirmar.`
+      :`${who} está ocupado. ${isMod?'Dá pra tocar sem essa pessoa ou chamar um substituto acima.':'Dá pra conversar no grupo, mas o sinal é vermelho.'}`;
+    body.appendChild(tip);
+  }
+  if(isMod&&st.agg==='free'){
+    const btn=document.createElement('button');btn.className='btn primary';btn.style.marginTop='18px';btn.textContent='Reservar data';
+    btn.onclick=()=>{closeBandSheet();openReserve(bandId,d);};body.appendChild(btn);
+  }
+  scrimBand.classList.add('open');sheetBand.classList.add('open');
+}
+function renderEvent(bandId,d,res){
+  const sub=document.getElementById('rost-sub'),body=document.getElementById('rost-body'),b=BANDS.find(x=>x.id===bandId);
+  const ic=res.tipo==='show'?'🎤':'🎸',tl=res.tipo==='show'?'Apresentação':'Ensaio';
+  sub.innerHTML='<span class="rost-pill res">MARCADO</span> confirmado por '+b.name;
+  const subs=ADJ.filter(a=>a.bandId===bandId&&a.day===d&&a.kind==='sub');
+  const outs=ADJ.filter(a=>a.bandId===bandId&&a.day===d&&a.kind==='out');
+  let form='';
+  if(subs.length||outs.length){
+    const parts=[...subs.map(s=>s.guest+' no '+instOf(bandId,s.member)),...outs.map(o=>'sem '+instOf(bandId,o.member))];
+    form=`<div class="row"><span class="ic">🎚️</span> ${parts.join(' · ')}</div>`;
+  }
+  body.innerHTML=`<div class="eventcard">
+    <div class="row"><span class="ic">${ic}</span> <b>${tl} · ${b.name}</b></div>
+    <div class="row"><span class="ic">📍</span> ${res.local||'local a definir'}</div>
+    <div class="row"><span class="ic">🕘</span> ${res.hora}</div>
+    <div class="row"><span class="ic">${res.hold==='full'?'🔒':'🟡'}</span> ${res.hold==='full'?'Dia travado pros integrantes':'Parcial — integrantes podem ter outra banda'}</div>
+    ${form}</div>`;
+  const send=document.createElement('button');send.className='btn primary';send.style.marginTop='16px';send.textContent='Compartilhar confirmação';
+  send.onclick=()=>{closeBandSheet();openShare(bandId,d);};body.appendChild(send);
+  if(userIsMod(bandId)){
+    const del=document.createElement('button');del.className='btn danger';del.style.marginTop='10px';del.textContent='Cancelar reserva';
+    del.onclick=()=>{RES=RES.filter(r=>!(r.bandId===bandId&&r.day===d));closeBandSheet();renderBandGrid(bandId);buildMyGrid();toast('Reserva cancelada');};
+    body.appendChild(del);
+  }
+}
+const closeBandSheet=()=>{scrimBand.classList.remove('open');sheetBand.classList.remove('open');};
+scrimBand.onclick=closeBandSheet;
+
+/* =========================================================
+   RESERVAR
+========================================================= */
+const scrimRes=document.getElementById('scrimRes'),sheetRes=document.getElementById('sheetRes');
+let resCtx={};
+const holdHelp={full:'O dia fica travado: nas outras bandas, os integrantes aparecem ocupados (vermelho).',
+  partial:'Reservado, mas nas outras bandas os integrantes aparecem como "talvez" (amarelo) — pra quem faz mais de um compromisso no dia.'};
+function segSet(id,v){document.querySelectorAll('#'+id+' button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));}
+function openReserve(bandId,d){
+  resCtx={bandId,day:d,tipo:'ensaio',hold:'full'};
+  document.getElementById('res-sub').textContent=BANDS.find(b=>b.id===bandId).name+' · '+longDate(d);
+  document.getElementById('res-local').value='';document.getElementById('res-hora').value='20:00';
+  segSet('seg-tipo','ensaio');segSet('seg-hold','full');
+  document.getElementById('hold-help').textContent=holdHelp.full;document.getElementById('res-confirm').textContent='Reservar e travar';
+  scrimRes.classList.add('open');sheetRes.classList.add('open');
+}
+const closeRes=()=>{scrimRes.classList.remove('open');sheetRes.classList.remove('open');};
+scrimRes.onclick=closeRes;document.getElementById('res-cancel').onclick=closeRes;
+document.querySelectorAll('#seg-tipo button').forEach(b=>b.onclick=()=>{resCtx.tipo=b.dataset.v;segSet('seg-tipo',b.dataset.v);});
+document.querySelectorAll('#seg-hold button').forEach(b=>b.onclick=()=>{resCtx.hold=b.dataset.v;segSet('seg-hold',b.dataset.v);
+  document.getElementById('hold-help').textContent=holdHelp[b.dataset.v];
+  document.getElementById('res-confirm').textContent=b.dataset.v==='full'?'Reservar e travar':'Reservar parcial';});
+document.getElementById('res-confirm').onclick=()=>{
+  RES.push({bandId:resCtx.bandId,day:resCtx.day,tipo:resCtx.tipo,local:document.getElementById('res-local').value.trim(),hora:document.getElementById('res-hora').value||'20:00',hold:resCtx.hold});
+  closeRes();renderBandGrid(resCtx.bandId);buildMyGrid();openShare(resCtx.bandId,resCtx.day);
+};
+
+/* =========================================================
+   COMPARTILHAR
+========================================================= */
+const scrimShare=document.getElementById('scrimShare'),sheetShare=document.getElementById('sheetShare');
+let shareData=null;
+function icsStamp(day,hhmm,addH){let[h,m]=hhmm.split(':').map(Number);let dt=new Date(2026,5,day,h,m);if(addH)dt=new Date(dt.getTime()+addH*3600000);
+  return ''+dt.getFullYear()+pad(dt.getMonth()+1)+pad(dt.getDate())+'T'+pad(dt.getHours())+pad(dt.getMinutes())+'00';}
+function openShare(bandId,d){
+  const r=RES.find(x=>x.bandId===bandId&&x.day===d);if(!r)return;
+  const b=BANDS.find(x=>x.id===bandId),ic=r.tipo==='show'?'🎤':'🎸',tl=r.tipo==='show'?'Apresentação':'Ensaio',title=b.name+' — '+tl;
+  const subs=ADJ.filter(a=>a.bandId===bandId&&a.day===d&&a.kind==='sub');
+  const formLine=subs.length?'\n🎚️ '+subs.map(s=>s.guest+' no '+instOf(bandId,s.member)).join(', '):'';
+  const txt=`${ic} Confirmado, ${b.name}!\n\n${tl}\n📅 ${longDate(d)} · ${r.hora}\n📍 ${r.local||'local a definir'}${formLine}\n\nTá na agenda? Toca pra salvar 👇`;
+  document.getElementById('share-text').textContent=txt;
+  const start=icsStamp(d,r.hora),end=icsStamp(d,r.hora,2);
+  document.getElementById('share-gcal').href='https://calendar.google.com/calendar/render?action=TEMPLATE&text='+encodeURIComponent(title)+'&dates='+start+'/'+end+'&location='+encodeURIComponent(r.local||'')+'&details='+encodeURIComponent('Confirmado pela Pauta');
+  shareData={txt,title,start,end,local:r.local||''};
+  scrimShare.classList.add('open');sheetShare.classList.add('open');
+}
+scrimShare.onclick=()=>{scrimShare.classList.remove('open');sheetShare.classList.remove('open');};
+async function copyText(t){
+  try{await navigator.clipboard.writeText(t);toast('Texto copiado');}
+  catch{const ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();
+    try{document.execCommand('copy');toast('Texto copiado');}catch{toast('Selecione e copie o texto');}document.body.removeChild(ta);}
+}
+document.getElementById('share-copy').onclick=()=>copyText(shareData.txt);
+document.getElementById('share-send').onclick=async()=>{if(navigator.share){try{await navigator.share({text:shareData.txt});}catch(e){if(e.name!=='AbortError')copyText(shareData.txt);}}else copyText(shareData.txt);};
+document.getElementById('share-ics').onclick=()=>{
+  const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Pauta//PT-BR//','BEGIN:VEVENT','SUMMARY:'+shareData.title,'DTSTART:'+shareData.start,'DTEND:'+shareData.end,'LOCATION:'+shareData.local,'DESCRIPTION:Confirmado pela Pauta','END:VEVENT','END:VCALENDAR'].join('\r\n');
+  try{const blob=new Blob([ics],{type:'text/calendar'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='evento-pauta.ics';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('Arquivo .ics gerado');}
+  catch{toast('Use o botão do Google aqui ao lado');}
+};
+
+/* =========================================================
+   LISTA DE BANDAS + util + LOGIN
+========================================================= */
+function buildBandList(){
+  const wrap=document.getElementById('bandlist');wrap.innerHTML='';
+  BANDS.forEach(b=>{
+    const card=document.createElement('div');card.className='bandcard';
+    const mod=userIsMod(b.id);
+    card.innerHTML=`<div class="glyph" style="background:${COLORS[b.id]}">${b.name[0]}</div>
+      <div class="info"><div class="name">${b.name}<span class="role ${mod?'mod':'mem'}">${mod?'Moderador':'Membro'}</span></div><div class="next">${b.next}</div></div><div class="chev">›</div>`;
+    card.onclick=()=>openBand(b.id);wrap.appendChild(card);
+  });
+  const add=document.createElement('button');add.className='addband';add.textContent='+  Criar nova banda';wrap.appendChild(add);
+}
+let toastT=null;
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),1900);}
+document.getElementById('backBtn').onclick=()=>go('bands');
+
+/* ===== GERIR BANDA: convite + co-moderador ===== */
+const scrimMng=document.getElementById('scrimMng'),sheetMng=document.getElementById('sheetMng');
+function inviteToken(b){return b.id.slice(0,2)+Math.abs(hash(b.id+b.name)).toString(36).slice(0,6);}
+function openManage(bandId){
+  const b=BANDS.find(x=>x.id===bandId);
+  document.getElementById('mng-sub').textContent=b.name+' · '+b.mods.length+(b.mods.length>1?' moderadores':' moderador');
+  const body=document.getElementById('mng-body');body.innerHTML='';
+  // convite (sem custo de mensagem — o moderador manda pelo próprio WhatsApp)
+  const token=inviteToken(b);
+  const inv=document.createElement('div');inv.className='eventcard';
+  inv.innerHTML=`<div style="font-size:13px;color:var(--dim);line-height:1.5;margin-bottom:10px">Convide pelo seu WhatsApp — sem custo de mensagem. O link já prova que a pessoa é dona do número.</div>
+    <div class="linkbox">pauta.app/convite/${token}</div>`;
+  const cp=document.createElement('button');cp.className='btn ghost';cp.style.marginTop='10px';cp.textContent='Copiar link do convite';
+  cp.onclick=()=>copyText('Entra no '+b.name+' aqui no Pauta e ajusta sua agenda 🎸\npauta.app/convite/'+token);
+  inv.appendChild(cp);body.appendChild(inv);
+  // integrantes
+  const isMe=userIsMod(bandId);
+  const head=document.createElement('div');head.className='rgroup';head.innerHTML='<div class="gl">👥 Integrantes</div>';body.appendChild(head);
+  b.members.forEach(m=>{
+    const mod=b.mods.includes(m),me=m==='Você';
+    const initials=me?'VC':m.slice(0,2).toUpperCase(),col=avColor[m.charCodeAt(0)%avColor.length];
+    const row=document.createElement('div');row.className='person';
+    row.innerHTML=`<span class="av" style="background:${col}">${initials}</span>
+      <div style="flex:1"><div class="pn">${m}${me?' (você)':''}${mod?'<span class="mng-tag">👑 mod</span>':''}</div>
+      <div class="pnote">${instOf(bandId,m)}</div></div>`;
+    if(isMe&&!me){
+      const btn=document.createElement('button');btn.className='undo';
+      if(mod){btn.textContent='Tirar mod';btn.onclick=()=>{if(b.mods.length<=1){toast('Precisa de pelo menos 1 moderador');return;}b.mods=b.mods.filter(x=>x!==m);refreshManage(bandId);toast(m+' deixou de ser moderador');};}
+      else{btn.textContent='Tornar mod';btn.onclick=()=>{b.mods.push(m);refreshManage(bandId);toast(m+' agora é moderador');};}
+      row.appendChild(btn);
+    }
+    body.appendChild(row);
+  });
+  scrimMng.classList.add('open');sheetMng.classList.add('open');
+}
+function refreshManage(bandId){openManage(bandId);buildBandList();document.getElementById('bh-meta').textContent=BANDS.find(b=>b.id===bandId).members.length+' integrantes · '+(userIsMod(bandId)?'você é moderador':'você é membro');}
+scrimMng.onclick=()=>{scrimMng.classList.remove('open');sheetMng.classList.remove('open');};
+document.getElementById('inviteBtn').onclick=()=>openManage(currentBand);
+
+/* login mock */
+document.getElementById('send-code').onclick=()=>{document.getElementById('login-step1').style.display='none';document.getElementById('login-step2').style.display='block';document.getElementById('otp').focus();};
+document.getElementById('back-phone').onclick=()=>{document.getElementById('login-step2').style.display='none';document.getElementById('login-step1').style.display='block';};
+document.getElementById('resend').onclick=()=>toast('Código reenviado pelo WhatsApp');
+document.getElementById('verify-code').onclick=()=>{document.getElementById('login').style.display='none';toast('Bem-vindo de volta 🎸');};
+document.getElementById('otp').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('verify-code').click();});
+
+buildWeekdays();buildMyGrid();buildBandList();
+</script>
+</body>
+</html>
