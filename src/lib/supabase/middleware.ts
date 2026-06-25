@@ -53,10 +53,12 @@ export async function updateSession(request: NextRequest) {
   const ehRotaPublica =
     pathname.startsWith("/login") || pathname.startsWith("/auth");
 
-  // Não logado tentando acessar rota protegida -> manda pro login.
+  // Não logado tentando acessar rota protegida -> manda pro login,
+  // guardando o destino no parâmetro "next" (ex.: um link de convite).
   if (!user && !ehRotaPublica) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/login";
+    loginUrl.searchParams.set("next", pathname);
     return NextResponse.redirect(loginUrl);
   }
 

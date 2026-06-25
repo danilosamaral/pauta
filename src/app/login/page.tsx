@@ -73,9 +73,11 @@ export default function LoginPage() {
       setErro(traduzErro(error.message));
       return;
     }
-    // Logado! Atualiza e vai para a home. O refresh garante que o
-    // servidor releia a sessão recém-criada.
-    router.replace("/");
+    // Logado! Se viemos de um link protegido (ex.: convite), voltamos pra ele;
+    // senão, para a home. Só aceitamos caminhos internos (começam com "/").
+    const next = new URLSearchParams(window.location.search).get("next");
+    const destino = next && next.startsWith("/") ? next : "/";
+    router.replace(destino);
     router.refresh();
   }
 
