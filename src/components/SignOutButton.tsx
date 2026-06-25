@@ -8,9 +8,9 @@ import { createClient } from "@/lib/supabase/client";
  */
 export default function SignOutButton() {
   const router = useRouter();
-  const supabase = createClient();
 
   async function sair() {
+    const supabase = createClient();
     await supabase.auth.signOut(); // apaga a sessão (cookies)
     router.replace("/login");
     router.refresh(); // força o servidor a reconhecer que saiu

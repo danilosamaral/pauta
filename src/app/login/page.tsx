@@ -17,7 +17,6 @@ import { DDI_BRASIL } from "@/lib/constants";
  */
 export default function LoginPage() {
   const router = useRouter();
-  const supabase = createClient();
 
   // Em qual etapa estamos.
   const [etapa, setEtapa] = useState<"fone" | "codigo">("fone");
@@ -40,6 +39,10 @@ export default function LoginPage() {
     setErro(null);
     setCarregando(true);
 
+    // Criamos o cliente AQUI (no clique), e não durante a renderização.
+    // Isso evita que o build quebre ao pré-renderizar a página sem as
+    // variáveis de ambiente.
+    const supabase = createClient();
     const { error } = await supabase.auth.signInWithOtp({
       phone: telefoneE164(),
     });
@@ -58,6 +61,7 @@ export default function LoginPage() {
     setErro(null);
     setCarregando(true);
 
+    const supabase = createClient();
     const { error } = await supabase.auth.verifyOtp({
       phone: telefoneE164(),
       token: codigo.trim(),

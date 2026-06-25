@@ -13,7 +13,6 @@ import { createClient } from "@/lib/supabase/client";
  */
 export default function NameForm({ userId }: { userId: string }) {
   const router = useRouter();
-  const supabase = createClient();
 
   const [nome, setNome] = useState("");
   const [salvando, setSalvando] = useState(false);
@@ -24,6 +23,7 @@ export default function NameForm({ userId }: { userId: string }) {
     setErro(null);
     setSalvando(true);
 
+    const supabase = createClient();
     const { error } = await supabase
       .from("profiles")
       .update({ display_name: nome.trim() })
