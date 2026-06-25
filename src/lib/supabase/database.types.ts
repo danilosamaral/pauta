@@ -1,9 +1,8 @@
 // =============================================================
 // TIPOS DO BANCO (gerados automaticamente pelo Supabase)
 //
-// Este arquivo é gerado a partir do schema real do banco. Ele dá ao
-// TypeScript o "mapa" das tabelas/colunas — assim, ao consultar o Supabase,
-// o editor já sabe os nomes e tipos das colunas e avisa se erramos algo.
+// Gerado a partir do schema real. Dá ao TypeScript o "mapa" das
+// tabelas/colunas/funções, com autocomplete e checagem nas consultas.
 //
 // NÃO edite à mão. Quando o schema mudar, regeramos este arquivo.
 // =============================================================
@@ -287,6 +286,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_invite: { Args: { invite_token: string }; Returns: Json }
+      create_band: { Args: { p_name: string }; Returns: string }
+      create_invite: {
+        Args: { p_band_id: string; p_instrument?: string; p_role?: string }
+        Returns: string
+      }
       is_member_of: { Args: { b: string }; Returns: boolean }
       is_moderator_of: { Args: { b: string }; Returns: boolean }
     }
