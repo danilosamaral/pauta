@@ -13,6 +13,7 @@ import { createClient } from "@/lib/supabase/server";
 import { NOME_PROVISORIO } from "@/lib/constants";
 import NameForm from "@/components/NameForm";
 import SignOutButton from "@/components/SignOutButton";
+import MinhaAgenda from "@/components/agenda/MinhaAgenda";
 
 export default async function Home() {
   const supabase = await createClient();
@@ -52,24 +53,8 @@ export default async function Home() {
           <NameForm userId={user.id} />
         </>
       ) : (
-        <>
-          <div>
-            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-dim">
-              Você está dentro
-            </p>
-            <p className="mt-1 text-xl">
-              Olá, <span className="font-semibold">{profile!.display_name}</span> 👋
-            </p>
-          </div>
-
-          {/* Marcador do que vem a seguir — telas reais entram nos próximos passos. */}
-          <div className="rounded-pauta border border-dashed border-line p-5 text-sm text-dim">
-            Sua <strong className="text-text">agenda pessoal</strong> e suas{" "}
-            <strong className="text-text">bandas</strong> aparecem aqui em breve.
-            <br />
-            (Próximos passos da Fase 1.)
-          </div>
-        </>
+        // Já tem nome: mostramos a tela principal — a Minha Agenda.
+        <MinhaAgenda userId={user.id} />
       )}
     </main>
   );
