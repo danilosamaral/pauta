@@ -9,6 +9,7 @@ type Fase = "convite" | "entrando" | "ok" | "erro";
 export default function ClaimInvite({ token }: { token: string }) {
   const [fase, setFase] = useState<Fase>("convite");
   const [banda, setBanda] = useState("");
+  const [jaEra, setJaEra] = useState(false); // a pessoa já era membro
   const [msg, setMsg] = useState("");
 
   async function entrar() {
@@ -22,9 +23,11 @@ export default function ClaimInvite({ token }: { token: string }) {
       setFase("erro");
       return;
     }
-    // A função retorna { band_id, band_name }.
-    const obj = data as { band_id: string; band_name: string };
+    // A função retorna { band_id, band_name, already }.
+    // already = true significa que a pessoa JÁ era membro — também é sucesso.
+    const obj = data as { band_id: string; band_name: string; already: boolean };
     setBanda(obj.band_name);
+    setJaEra(obj.already);
     setFase("ok");
   }
 
@@ -37,7 +40,7 @@ export default function ClaimInvite({ token }: { token: string }) {
       {fase === "ok" ? (
         <>
           <p className="text-lg">
-            Você entrou em{" "}
+            {jaEra ? "Você já está em " : "Você entrou em "}
             <span className="font-semibold text-brand">{banda}</span>! 🎉
           </p>
           <Link
@@ -74,7 +77,11 @@ export default function ClaimInvite({ token }: { token: string }) {
 
 function traduzErro(msg: string): string {
   const m = msg.toLowerCase();
-  if (m.includes("inválido") || m.includes("invalid")) return "Convite inválido.";
+  if (m.includes("outro número") || m.includes("outro numero"))
+    return "Este convite foi feito para outro número de telefone. Peça um convite para o seu número.";
+  if (m.includes("já utilizado") || m.includes("ja utilizado"))
+    return "Este convite já foi utilizado.";
   if (m.includes("expirado") || m.includes("expired")) return "Convite expirado.";
+  if (m.includes("inválido") || m.includes("invalid")) return "Convite inválido.";
   return "Não consegui aceitar o convite. Tente abrir o link de novo.";
 }

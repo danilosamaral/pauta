@@ -3,6 +3,15 @@
 import { useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { PAISES } from "@/lib/constants";
+
+// Convite já gerado: guardamos o link e para quem ele é (número/nome).
+type ConviteGerado = {
+  url: string;
+  telefoneDigitos: string; // só dígitos com código do país (ex.: 5567984541353)
+  telefoneVisivel: string; // bonitinho pra mostrar (ex.: +55 67984541353)
+  nome: string;
+};
 
 // Formato de cada banda que a tela exibe.
 export type BandaItem = {
@@ -21,10 +30,27 @@ export default function BandasClient({ inicial }: { inicial: BandaItem[] }) {
   const [criando, setCriando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
-  // Link de convite gerado, por banda. E controle de "copiado".
-  const [linkPorBanda, setLinkPorBanda] = useState<Record<string, string>>({});
+  // Convite gerado, por banda. E controle de "copiado".
+  const [convitePorBanda, setConvitePorBanda] = useState<
+    Record<string, ConviteGerado>
+  >({});
   const [gerando, setGerando] = useState<string | null>(null);
   const [copiado, setCopiado] = useState<string | null>(null);
+
+  // Formulário de convite: qual banda está com o form aberto + os campos.
+  const [formAberto, setFormAberto] = useState<string | null>(null);
+  const [convPais, setConvPais] = useState(PAISES[0].ddi); // padrão +55
+  const [convNumero, setConvNumero] = useState("");
+  const [convNome, setConvNome] = useState("");
+
+  // Abre o formulário de convite zerado para uma banda.
+  function abrirForm(bandId: string) {
+    setErro(null);
+    setConvPais(PAISES[0].ddi);
+    setConvNumero("");
+    setConvNome("");
+    setFormAberto(bandId);
+  }
 
   // ----- Criar banda (vira moderador automaticamente, via função do banco) -----
   async function criarBanda(e: React.FormEvent) {
@@ -48,22 +74,56 @@ export default function BandasClient({ inicial }: { inicial: BandaItem[] }) {
     setNome("");
   }
 
-  // ----- Gerar link de convite (só moderador) -----
+  // ----- Gerar convite amarrado ao número (só moderador) -----
   async function gerarConvite(bandId: string) {
     setErro(null);
+
+    // Normalização IGUAL à do login: código do país (só dígitos) + dígitos
+    // do número, sem "+", espaços ou parênteses. Ex.: 55 + 67984541353.
+    const paisDigitos = PAISES.find((p) => p.ddi === convPais)?.digitos ?? "55";
+    const numeroDigitos = convNumero.replace(/\D/g, "");
+    if (numeroDigitos.length < 8) {
+      setErro("Confira o número do convidado (com DDD).");
+      return;
+    }
+    const telefoneDigitos = `${paisDigitos}${numeroDigitos}`;
+
     setGerando(bandId);
     const supabase = createClient();
     const { data, error } = await supabase.rpc("create_invite", {
       p_band_id: bandId,
+      p_invited_phone: telefoneDigitos,
+      p_invited_name: convNome.trim() || undefined,
+      p_role: "member",
+      p_instrument: undefined,
     });
     setGerando(null);
     if (error || !data) {
       setErro("Não consegui gerar o convite.");
       return;
     }
-    // Monta o link completo usando o endereço atual do app.
+
     const url = `${window.location.origin}/convite/${data}`;
-    setLinkPorBanda((m) => ({ ...m, [bandId]: url }));
+    setConvitePorBanda((m) => ({
+      ...m,
+      [bandId]: {
+        url,
+        telefoneDigitos,
+        telefoneVisivel: `${convPais} ${numeroDigitos}`,
+        nome: convNome.trim(),
+      },
+    }));
+    setFormAberto(null); // fecha o formulário, mostra o link pronto
+  }
+
+  // Texto pronto pro WhatsApp, deixando claro que o convite é pra aquele número.
+  function textoConvite(bandName: string, c: ConviteGerado): string {
+    const ola = c.nome ? `Oi, ${c.nome}!` : "Oi!";
+    return (
+      `${ola} Você foi convidado(a) pra banda "${bandName}" no Pauta. ` +
+      `Esse convite é só pro seu número (${c.telefoneVisivel}). ` +
+      `Entra por aqui: ${c.url}`
+    );
   }
 
   async function copiar(bandId: string, url: string) {
@@ -126,21 +186,32 @@ export default function BandasClient({ inicial }: { inicial: BandaItem[] }) {
             {/* Convite (só moderador) */}
             {banda.role === "moderator" && (
               <div className="mt-3 border-t border-line pt-3">
-                {linkPorBanda[banda.id] ? (
+                {convitePorBanda[banda.id] ? (
+                  // Convite já gerado: link + textos prontos.
                   <div className="flex flex-col gap-2">
+                    <p className="text-xs text-dim">
+                      Convite para{" "}
+                      <strong className="text-text">
+                        {convitePorBanda[banda.id].nome || "o número"}
+                      </strong>{" "}
+                      ({convitePorBanda[banda.id].telefoneVisivel}). Só esse
+                      número consegue entrar.
+                    </p>
                     <p className="break-all rounded-lg border border-line bg-ink px-3 py-2 font-mono text-[11px] text-dim">
-                      {linkPorBanda[banda.id]}
+                      {convitePorBanda[banda.id].url}
                     </p>
                     <div className="flex gap-2">
                       <button
-                        onClick={() => copiar(banda.id, linkPorBanda[banda.id])}
+                        onClick={() =>
+                          copiar(banda.id, convitePorBanda[banda.id].url)
+                        }
                         className="flex-1 rounded-lg bg-brand px-3 py-2 text-sm font-semibold text-brand-ink active:scale-[0.98]"
                       >
                         {copiado === banda.id ? "Copiado! ✓" : "Copiar link"}
                       </button>
                       <a
-                        href={`https://wa.me/?text=${encodeURIComponent(
-                          `Bora tocar? Entra na nossa banda "${banda.name}" no Pauta: ${linkPorBanda[banda.id]}`,
+                        href={`https://wa.me/${convitePorBanda[banda.id].telefoneDigitos}?text=${encodeURIComponent(
+                          textoConvite(banda.name, convitePorBanda[banda.id]),
                         )}`}
                         target="_blank"
                         rel="noopener noreferrer"
@@ -149,16 +220,68 @@ export default function BandasClient({ inicial }: { inicial: BandaItem[] }) {
                         WhatsApp
                       </a>
                     </div>
+                    <button
+                      onClick={() => abrirForm(banda.id)}
+                      className="text-xs text-dim underline"
+                    >
+                      Convidar outra pessoa
+                    </button>
+                  </div>
+                ) : formAberto === banda.id ? (
+                  // Formulário do convite (número + nome).
+                  <div className="flex flex-col gap-2">
+                    <p className="text-sm text-dim">Convidar pelo número</p>
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={convPais}
+                        onChange={(e) => setConvPais(e.target.value)}
+                        aria-label="Código do país"
+                        className="rounded-lg border border-line bg-surface-2 px-2 py-2.5 font-mono text-sm text-text outline-none focus:border-brand"
+                      >
+                        {PAISES.map((p) => (
+                          <option key={p.ddi} value={p.ddi}>
+                            {p.ddi}
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        type="tel"
+                        inputMode="numeric"
+                        placeholder="DDD + número"
+                        value={convNumero}
+                        onChange={(e) => setConvNumero(e.target.value)}
+                        className="flex-1 rounded-lg border border-line bg-ink px-3 py-2.5 text-text outline-none focus:border-brand"
+                      />
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Nome do convidado (opcional)"
+                      value={convNome}
+                      onChange={(e) => setConvNome(e.target.value)}
+                      className="rounded-lg border border-line bg-ink px-3 py-2.5 text-text outline-none focus:border-brand"
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setFormAberto(null)}
+                        className="flex-1 rounded-lg border border-line bg-surface-2 px-3 py-2 text-sm font-semibold text-text active:scale-[0.98]"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        onClick={() => gerarConvite(banda.id)}
+                        disabled={gerando === banda.id}
+                        className="flex-1 rounded-lg bg-brand px-3 py-2 text-sm font-semibold text-brand-ink active:scale-[0.98] disabled:opacity-60"
+                      >
+                        {gerando === banda.id ? "Gerando…" : "Gerar convite"}
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <button
-                    onClick={() => gerarConvite(banda.id)}
-                    disabled={gerando === banda.id}
-                    className="w-full rounded-lg border border-line bg-surface-2 px-3 py-2 text-sm font-semibold text-text active:scale-[0.98] disabled:opacity-60"
+                    onClick={() => abrirForm(banda.id)}
+                    className="w-full rounded-lg border border-line bg-surface-2 px-3 py-2 text-sm font-semibold text-text active:scale-[0.98]"
                   >
-                    {gerando === banda.id
-                      ? "Gerando…"
-                      : "Gerar link de convite"}
+                    Convidar
                   </button>
                 )}
               </div>

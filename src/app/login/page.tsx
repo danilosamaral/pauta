@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { DDI_BRASIL } from "@/lib/constants";
+import { PAISES } from "@/lib/constants";
 
 /**
  * TELA DE LOGIN — por telefone, com código OTP (6 dígitos).
@@ -20,6 +20,8 @@ export default function LoginPage() {
 
   // Em qual etapa estamos.
   const [etapa, setEtapa] = useState<"fone" | "codigo">("fone");
+  // Código do país escolhido (padrão: Brasil +55).
+  const [pais, setPais] = useState(PAISES[0].ddi);
   // O que a pessoa digita.
   const [fone, setFone] = useState(""); // só os dígitos (DDD + número)
   const [codigo, setCodigo] = useState("");
@@ -27,10 +29,10 @@ export default function LoginPage() {
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
-  // Monta o telefone no formato E.164 que o Supabase exige: +55 + dígitos.
+  // Monta o telefone no formato E.164 que o Supabase exige: +<código> + dígitos.
   function telefoneE164() {
     const apenasDigitos = fone.replace(/\D/g, "");
-    return `${DDI_BRASIL}${apenasDigitos}`;
+    return `${pais}${apenasDigitos}`;
   }
 
   // Etapa 1: pedir o código.
@@ -101,10 +103,19 @@ export default function LoginPage() {
               Seu telefone (com DDD)
             </label>
             <div className="flex items-center gap-2">
-              {/* Prefixo fixo do país, só visual */}
-              <span className="rounded-lg border border-line bg-surface-2 px-3 py-3 font-mono text-sm text-dim">
-                {DDI_BRASIL}
-              </span>
+              {/* Seletor de país (código do país) */}
+              <select
+                value={pais}
+                onChange={(e) => setPais(e.target.value)}
+                aria-label="Código do país"
+                className="rounded-lg border border-line bg-surface-2 px-2 py-3 font-mono text-sm text-text outline-none focus:border-brand"
+              >
+                {PAISES.map((p) => (
+                  <option key={p.ddi} value={p.ddi}>
+                    {p.ddi}
+                  </option>
+                ))}
+              </select>
               <input
                 id="fone"
                 type="tel"
