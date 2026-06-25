@@ -289,12 +289,19 @@ export type Database = {
       claim_invite: { Args: { invite_token: string }; Returns: Json }
       create_band: { Args: { p_name: string }; Returns: string }
       create_invite: {
-        Args: { p_band_id: string; p_instrument?: string; p_role?: string }
+        Args: {
+          p_band_id: string
+          p_instrument?: string
+          p_invited_name?: string
+          p_invited_phone?: string
+          p_role?: string
+        }
         Returns: string
       }
       is_member_of: { Args: { b: string }; Returns: boolean }
       is_moderator_of: { Args: { b: string }; Returns: boolean }
       leave_band: { Args: { p_band_id: string }; Returns: undefined }
+      only_digits: { Args: { p: string }; Returns: string }
       set_member_role: {
         Args: { p_band_id: string; p_profile_id: string; p_role: string }
         Returns: undefined
