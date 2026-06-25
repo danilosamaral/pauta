@@ -1,35 +1,69 @@
-"use client"; // Faz a chamada de "aceitar convite" -> roda no navegador.
+"use client"; // Faz o "login pelo convite" -> roda no navegador.
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-type Fase = "convite" | "entrando" | "ok" | "erro";
+type Fase = "entrando" | "erro";
 
 export default function ClaimInvite({ token }: { token: string }) {
-  const [fase, setFase] = useState<Fase>("convite");
-  const [banda, setBanda] = useState("");
-  const [jaEra, setJaEra] = useState(false); // a pessoa já era membro
+  const router = useRouter();
+  const [fase, setFase] = useState<Fase>("entrando");
   const [msg, setMsg] = useState("");
+  // Evita rodar duas vezes (o efeito pode disparar 2x em desenvolvimento).
+  const jaRodou = useRef(false);
 
-  async function entrar() {
-    setFase("entrando");
-    const supabase = createClient();
-    const { data, error } = await supabase.rpc("claim_invite", {
-      invite_token: token,
-    });
-    if (error) {
-      setMsg(traduzErro(error.message));
+  useEffect(() => {
+    if (jaRodou.current) return;
+    jaRodou.current = true;
+
+    (async () => {
+      const supabase = createClient();
+
+      // Chama a Edge Function que valida o convite e devolve a sessão.
+      const { data, error } = await supabase.functions.invoke("claim-and-login", {
+        body: { token },
+      });
+
+      if (error || !data) {
+        setMsg("Não consegui abrir o convite. Tente novamente.");
+        setFase("erro");
+        return;
+      }
+
+      // Sucesso com sessão -> grava a sessão e entra.
+      if (data.access_token && data.refresh_token) {
+        await supabase.auth.setSession({
+          access_token: data.access_token,
+          refresh_token: data.refresh_token,
+        });
+        router.replace("/");
+        router.refresh();
+        return;
+      }
+
+      // Convite já usado: se EU já estiver logado (sou o convidado que já
+      // entrou), sigo pra agenda; senão, é um link queimado.
+      if (data.already) {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (user) {
+          router.replace("/");
+          router.refresh();
+          return;
+        }
+        setMsg("Este convite já foi utilizado. Peça um novo ao moderador.");
+        setFase("erro");
+        return;
+      }
+
+      // Erros de negócio (inválido / expirado).
+      setMsg(traduzErro(String(data.error ?? "")));
       setFase("erro");
-      return;
-    }
-    // A função retorna { band_id, band_name, already }.
-    // already = true significa que a pessoa JÁ era membro — também é sucesso.
-    const obj = data as { band_id: string; band_name: string; already: boolean };
-    setBanda(obj.band_name);
-    setJaEra(obj.already);
-    setFase("ok");
-  }
+    })();
+  }, [token, router]);
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-[430px] flex-col justify-center gap-6 px-6 text-center">
@@ -37,51 +71,26 @@ export default function ClaimInvite({ token }: { token: string }) {
         Pauta<span className="text-brand">.</span>
       </h1>
 
-      {fase === "ok" ? (
-        <>
-          <p className="text-lg">
-            {jaEra ? "Você já está em " : "Você entrou em "}
-            <span className="font-semibold text-brand">{banda}</span>! 🎉
-          </p>
-          <Link
-            href="/bandas"
-            className="rounded-lg bg-brand px-4 py-3 font-semibold text-brand-ink active:scale-[0.98]"
-          >
-            Ver minhas bandas
-          </Link>
-        </>
-      ) : fase === "erro" ? (
-        <>
-          <p className="text-busy">{msg}</p>
-          <Link href="/bandas" className="text-sm text-dim underline">
-            Ir para minhas bandas
-          </Link>
-        </>
+      {fase === "entrando" ? (
+        <p className="text-dim">Entrando pelo seu convite…</p>
       ) : (
         <>
-          <p className="text-dim">
-            Você recebeu um convite para entrar em uma banda no Pauta.
-          </p>
-          <button
-            onClick={entrar}
-            disabled={fase === "entrando"}
-            className="rounded-lg bg-brand px-4 py-3 font-semibold text-brand-ink active:scale-[0.98] disabled:opacity-60"
-          >
-            {fase === "entrando" ? "Entrando…" : "Entrar na banda"}
-          </button>
+          <p className="text-busy">{msg}</p>
+          <Link href="/login" className="text-sm text-dim underline">
+            Ir para a tela inicial
+          </Link>
         </>
       )}
     </main>
   );
 }
 
-function traduzErro(msg: string): string {
-  const m = msg.toLowerCase();
-  if (m.includes("outro número") || m.includes("outro numero"))
-    return "Este convite foi feito para outro número de telefone. Peça um convite para o seu número.";
+function traduzErro(erro: string): string {
+  const m = erro.toLowerCase();
+  if (m.includes("expirado")) return "Convite expirado. Peça um novo ao moderador.";
   if (m.includes("já utilizado") || m.includes("ja utilizado"))
-    return "Este convite já foi utilizado.";
-  if (m.includes("expirado") || m.includes("expired")) return "Convite expirado.";
-  if (m.includes("inválido") || m.includes("invalid")) return "Convite inválido.";
-  return "Não consegui aceitar o convite. Tente abrir o link de novo.";
+    return "Este convite já foi utilizado. Peça um novo ao moderador.";
+  if (m.includes("inválido") || m.includes("invalid"))
+    return "Convite inválido. Confira o link com o moderador.";
+  return "Não consegui abrir o convite. Tente novamente.";
 }

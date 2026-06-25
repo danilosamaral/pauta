@@ -50,8 +50,12 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const pathname = request.nextUrl.pathname;
+  // /convite é público: é justamente onde quem NÃO tem sessão entra (o link
+  // de convite cria a sessão pela Edge Function).
   const ehRotaPublica =
-    pathname.startsWith("/login") || pathname.startsWith("/auth");
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/auth") ||
+    pathname.startsWith("/convite");
 
   // Não logado tentando acessar rota protegida -> manda pro login,
   // guardando o destino no parâmetro "next" (ex.: um link de convite).
