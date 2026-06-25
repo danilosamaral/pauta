@@ -1,6 +1,7 @@
 "use client"; // Formulários e ações interativas -> roda no navegador.
 
 import { useState } from "react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
 // Formato de cada banda que a tela exibe.
@@ -98,7 +99,11 @@ export default function BandasClient({ inicial }: { inicial: BandaItem[] }) {
             key={banda.id}
             className="rounded-pauta border border-line bg-surface p-4"
           >
-            <div className="flex items-center gap-3">
+            {/* Tocar no topo abre o calendário da banda. */}
+            <Link
+              href={`/bandas/${banda.id}`}
+              className="flex items-center gap-3"
+            >
               {/* Glifo com a inicial */}
               <div className="grid h-11 w-11 flex-none place-items-center rounded-xl bg-gradient-to-br from-[#8a4fd6] to-[#6a30b8] font-display text-lg font-extrabold text-white">
                 {banda.name.charAt(0).toUpperCase()}
@@ -115,7 +120,8 @@ export default function BandasClient({ inicial }: { inicial: BandaItem[] }) {
                   {banda.memberCount === 1 ? "integrante" : "integrantes"}
                 </p>
               </div>
-            </div>
+              <span className="text-xl text-dim">›</span>
+            </Link>
 
             {/* Convite (só moderador) */}
             {banda.role === "moderator" && (
