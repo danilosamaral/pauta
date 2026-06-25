@@ -76,6 +76,7 @@ export default async function BandaPage({
           bandName={banda.name}
           souModerador={minhaPart?.role === "moderator"}
           integrantes={integrantes}
+          userId={user.id}
         />
       </main>
       <BottomNav />
