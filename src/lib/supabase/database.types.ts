@@ -294,6 +294,11 @@ export type Database = {
       }
       is_member_of: { Args: { b: string }; Returns: boolean }
       is_moderator_of: { Args: { b: string }; Returns: boolean }
+      leave_band: { Args: { p_band_id: string }; Returns: undefined }
+      set_member_role: {
+        Args: { p_band_id: string; p_profile_id: string; p_role: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

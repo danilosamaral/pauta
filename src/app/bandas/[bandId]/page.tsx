@@ -50,15 +50,16 @@ export default async function BandaPage({
     .eq("profile_id", user.id)
     .single();
 
-  // Integrantes (nome + instrumento). RLS permite ver colegas de banda.
+  // Integrantes (nome + instrumento + papel). RLS permite ver colegas de banda.
   const { data: parts } = await supabase
     .from("memberships")
-    .select("profile_id, instrument, profile:profiles(display_name)")
+    .select("profile_id, role, instrument, profile:profiles(display_name)")
     .eq("band_id", bandId);
 
   const integrantes: Integrante[] = (
     (parts ?? []) as Array<{
       profile_id: string;
+      role: string;
       instrument: string | null;
       profile: { display_name: string } | null;
     }>
@@ -66,6 +67,7 @@ export default async function BandaPage({
     id: p.profile_id,
     nome: p.profile?.display_name ?? "Sem nome",
     instrumento: p.instrument,
+    role: p.role === "moderator" ? "moderator" : "member",
   }));
 
   return (

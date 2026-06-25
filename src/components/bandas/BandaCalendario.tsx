@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
   DIAS_SEMANA_CURTOS,
@@ -20,6 +21,7 @@ export type Integrante = {
   id: string;
   nome: string;
   instrumento: string | null;
+  role: "moderator" | "member";
 };
 
 // Estado individual e estado agregado da banda no dia.
@@ -42,10 +44,12 @@ export default function BandaCalendario({
   integrantes: Integrante[];
   userId: string;
 }) {
+  const router = useRouter();
   const inicio = hoje();
   const [ano, setAno] = useState(inicio.ano);
   const [mes0, setMes0] = useState(inicio.mes0);
   const [carregando, setCarregando] = useState(true);
+  const [verIntegrantes, setVerIntegrantes] = useState(false);
 
   // disponibilidade por dia -> por integrante: { estado, note }
   const [porDia, setPorDia] = useState<
@@ -198,6 +202,12 @@ export default function BandaCalendario({
             {souModerador ? "você é moderador" : "você é membro"}
           </div>
         </div>
+        <button
+          onClick={() => setVerIntegrantes(true)}
+          className="flex-none rounded-[11px] border border-line bg-surface px-3 py-2 text-sm font-semibold"
+        >
+          Integrantes
+        </button>
       </div>
 
       {/* Faixa: datas livres pra todos */}
@@ -314,8 +324,156 @@ export default function BandaCalendario({
           aoMudar={carregar}
         />
       )}
+
+      {/* Painel de integrantes (papéis + sair) */}
+      {verIntegrantes && (
+        <IntegrantesSheet
+          bandId={bandId}
+          integrantes={integrantes}
+          souModerador={souModerador}
+          meuId={userId}
+          aoFechar={() => setVerIntegrantes(false)}
+          aoMudar={() => router.refresh()}
+          aoSair={() => router.push("/bandas")}
+        />
+      )}
     </section>
   );
+}
+
+// ---------- Painel de integrantes: promover / rebaixar / sair ----------
+function IntegrantesSheet({
+  bandId,
+  integrantes,
+  souModerador,
+  meuId,
+  aoFechar,
+  aoMudar,
+  aoSair,
+}: {
+  bandId: string;
+  integrantes: Integrante[];
+  souModerador: boolean;
+  meuId: string;
+  aoFechar: () => void;
+  aoMudar: () => void;
+  aoSair: () => void;
+}) {
+  const [ocupado, setOcupado] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
+
+  const qtdMods = integrantes.filter((m) => m.role === "moderator").length;
+
+  async function mudarPapel(profileId: string, novo: "moderator" | "member") {
+    setErro(null);
+    setOcupado(true);
+    const supabase = createClient();
+    const { error } = await supabase.rpc("set_member_role", {
+      p_band_id: bandId,
+      p_profile_id: profileId,
+      p_role: novo,
+    });
+    setOcupado(false);
+    if (error) {
+      setErro(traduzErroPapel(error.message));
+      return;
+    }
+    aoMudar(); // recarrega a página -> papéis atualizados
+  }
+
+  async function sair() {
+    setErro(null);
+    setOcupado(true);
+    const supabase = createClient();
+    const { error } = await supabase.rpc("leave_band", { p_band_id: bandId });
+    setOcupado(false);
+    if (error) {
+      setErro(traduzErroPapel(error.message));
+      return;
+    }
+    aoSair(); // vai para a lista de bandas
+  }
+
+  return (
+    <>
+      <div onClick={aoFechar} className="fixed inset-0 z-40 bg-black/60 backdrop-blur-[2px]" />
+      <div className="fixed inset-x-0 bottom-0 z-50 mx-auto max-h-[85%] max-w-[430px] overflow-y-auto rounded-t-[24px] border-t border-line bg-surface px-5 pb-7 pt-2">
+        <div className="mx-auto mt-2 mb-3.5 h-1 w-9 rounded-full bg-line" />
+        <h3 className="font-display text-lg font-bold">Integrantes</h3>
+        <p className="mb-3 mt-1 text-sm text-dim">
+          {souModerador
+            ? "Promova um colega a moderador ou rebaixe — a banda sempre precisa de pelo menos um."
+            : "Quem cuida das reservas e convites são os moderadores."}
+        </p>
+
+        <ul className="flex flex-col gap-2">
+          {integrantes.map((m) => {
+            const ehMod = m.role === "moderator";
+            const souEu = m.id === meuId;
+            return (
+              <li
+                key={m.id}
+                className="flex items-center gap-3 rounded-pauta border border-line bg-ink p-3"
+              >
+                <div className="grid h-9 w-9 flex-none place-items-center rounded-full bg-gradient-to-br from-[#c98bff] to-[#7d3fd6] text-sm font-bold text-white">
+                  {m.nome.charAt(0).toUpperCase()}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold">
+                    {m.nome} {souEu && <span className="text-dim">(você)</span>}
+                  </p>
+                  <p className="text-xs text-dim">
+                    {ehMod ? "Moderador" : "Membro"}
+                    {m.instrumento ? ` · ${m.instrumento}` : ""}
+                  </p>
+                </div>
+
+                {/* Ações de moderador */}
+                {souModerador &&
+                  (ehMod ? (
+                    <button
+                      onClick={() => mudarPapel(m.id, "member")}
+                      disabled={ocupado || qtdMods <= 1}
+                      className="flex-none rounded-lg border border-line bg-surface-2 px-3 py-1.5 text-xs font-semibold disabled:opacity-40"
+                    >
+                      Rebaixar
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => mudarPapel(m.id, "moderator")}
+                      disabled={ocupado}
+                      className="flex-none rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-brand-ink disabled:opacity-40"
+                    >
+                      Promover
+                    </button>
+                  ))}
+              </li>
+            );
+          })}
+        </ul>
+
+        {erro && <p className="mt-3 text-sm text-busy">{erro}</p>}
+
+        {/* Sair da banda */}
+        <button
+          onClick={sair}
+          disabled={ocupado}
+          className="mt-5 w-full rounded-lg border border-busy/40 bg-busy/10 px-4 py-3 text-sm font-semibold text-busy active:scale-[0.98] disabled:opacity-60"
+        >
+          Sair da banda
+        </button>
+      </div>
+    </>
+  );
+}
+
+function traduzErroPapel(msg: string): string {
+  const m = msg.toLowerCase();
+  if (m.includes("pelo menos um") || m.includes("promova"))
+    return "A banda precisa de pelo menos um moderador. Promova outro antes.";
+  if (m.includes("apenas moderador"))
+    return "Só moderador pode fazer isso.";
+  return "Não consegui concluir. Tente de novo.";
 }
 
 // ---------- Subcomponentes ----------
