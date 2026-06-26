@@ -32,13 +32,14 @@ export default function ClaimInvite({ token }: { token: string }) {
         return;
       }
 
-      // Sucesso com sessão -> grava a sessão e entra.
+      // Sucesso com sessão -> grava a sessão e leva pra criar a senha
+      // (primeiro acesso ou redefinição). Lá a pessoa pode pular se quiser.
       if (data.access_token && data.refresh_token) {
         await supabase.auth.setSession({
           access_token: data.access_token,
           refresh_token: data.refresh_token,
         });
-        router.replace("/");
+        router.replace("/criar-senha");
         router.refresh();
         return;
       }

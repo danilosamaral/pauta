@@ -8,6 +8,7 @@
 //  - senão, mostramos a tela principal: a Minha Agenda + navegação.
 // =============================================================
 
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { NOME_PROVISORIO } from "@/lib/constants";
@@ -29,12 +30,14 @@ export default async function Home() {
   // Lê o profile da pessoa logada (RLS garante que só vê o próprio).
   const { data: profile } = await supabase
     .from("profiles")
-    .select("display_name")
+    .select("display_name, password_set")
     .eq("id", user.id)
     .single();
 
   // Ainda sem nome de verdade? Mostramos o formulário de primeiro acesso.
   const precisaNome = !profile || profile.display_name === NOME_PROVISORIO;
+  // Já tem nome mas ainda não criou senha? Sugerimos criar (entrada fácil depois).
+  const sugerirSenha = !precisaNome && profile && !profile.password_set;
 
   return (
     <>
@@ -49,7 +52,17 @@ export default async function Home() {
             <NameForm userId={user.id} />
           </>
         ) : (
-          <MinhaAgenda userId={user.id} />
+          <>
+            {sugerirSenha && (
+              <Link
+                href="/criar-senha"
+                className="rounded-pauta border border-brand/40 bg-brand/10 p-3 text-sm text-[#d4aaff]"
+              >
+                🔑 Crie sua senha de 6 dígitos para entrar mais fácil depois →
+              </Link>
+            )}
+            <MinhaAgenda userId={user.id} />
+          </>
         )}
       </main>
 

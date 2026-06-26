@@ -265,18 +265,21 @@ export type Database = {
           created_at: string
           display_name: string
           id: string
+          password_set: boolean
           phone: string | null
         }
         Insert: {
           created_at?: string
           display_name: string
           id: string
+          password_set?: boolean
           phone?: string | null
         }
         Update: {
           created_at?: string
           display_name?: string
           id?: string
+          password_set?: boolean
           phone?: string | null
         }
         Relationships: []
