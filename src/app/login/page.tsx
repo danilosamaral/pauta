@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { PAISES } from "@/lib/constants";
+import Footer from "@/components/Footer";
 
 /**
  * TELA DE LOGIN — telefone + senha.
@@ -127,6 +128,8 @@ export default function LoginPage() {
           Solicitar acesso
         </Link>
       </p>
+
+      <Footer />
     </main>
   );
 }

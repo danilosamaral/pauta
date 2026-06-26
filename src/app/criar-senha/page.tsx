@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import Footer from "@/components/Footer";
 
 /**
  * TELA "CRIE SUA SENHA" (6 dígitos)
@@ -132,6 +133,8 @@ export default function CriarSenhaPage() {
           Agora não
         </button>
       </form>
+
+      <Footer />
     </main>
   );
 }
