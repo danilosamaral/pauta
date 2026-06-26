@@ -26,7 +26,7 @@ export default async function AdminPage() {
   const { data } = await supabase
     .from("access_requests")
     .select(
-      "id, name, phone, band_name, message, status, created_at, resulting_token",
+      "id, name, phone, band_name, message, status, created_at, resulting_token, receipt_path",
     )
     .order("created_at", { ascending: false });
 

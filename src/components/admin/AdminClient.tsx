@@ -12,6 +12,7 @@ export type Pedido = {
   status: string;
   created_at: string;
   resulting_token: string | null;
+  receipt_path: string | null;
 };
 
 export default function AdminClient({ inicial }: { inicial: Pedido[] }) {
@@ -58,6 +59,20 @@ export default function AdminClient({ inicial }: { inicial: Pedido[] }) {
     );
   }
 
+  // Abre o comprovante (bucket privado) via URL assinada temporária.
+  async function verComprovante(path: string) {
+    setErro(null);
+    const supabase = createClient();
+    const { data, error } = await supabase.storage
+      .from("comprovantes")
+      .createSignedUrl(path, 120);
+    if (error || !data?.signedUrl) {
+      setErro("Não consegui abrir o comprovante.");
+      return;
+    }
+    window.open(data.signedUrl, "_blank");
+  }
+
   async function copiar(id: string, url: string) {
     try {
       await navigator.clipboard.writeText(url);
@@ -100,6 +115,18 @@ export default function AdminClient({ inicial }: { inicial: Pedido[] }) {
           {p.message && (
             <p className="mt-2 text-sm text-dim">“{p.message}”</p>
           )}
+
+          {p.receipt_path ? (
+            <button
+              onClick={() => verComprovante(p.receipt_path!)}
+              className="mt-2 inline-block text-sm text-brand underline"
+            >
+              📎 Ver comprovante do PIX
+            </button>
+          ) : (
+            <p className="mt-2 text-xs text-dim">Sem comprovante anexado.</p>
+          )}
+
           <div className="mt-3 flex gap-2">
             <button
               onClick={() => recusar(p.id)}

@@ -31,6 +31,7 @@ export type Database = {
           message: string | null
           name: string
           phone: string
+          receipt_path: string | null
           resulting_band_id: string | null
           resulting_token: string | null
           reviewed_at: string | null
@@ -44,6 +45,7 @@ export type Database = {
           message?: string | null
           name: string
           phone: string
+          receipt_path?: string | null
           resulting_band_id?: string | null
           resulting_token?: string | null
           reviewed_at?: string | null
@@ -57,6 +59,7 @@ export type Database = {
           message?: string | null
           name?: string
           phone?: string
+          receipt_path?: string | null
           resulting_band_id?: string | null
           resulting_token?: string | null
           reviewed_at?: string | null
