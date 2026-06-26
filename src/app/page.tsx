@@ -38,6 +38,8 @@ export default async function Home() {
   const precisaNome = !profile || profile.display_name === NOME_PROVISORIO;
   // Já tem nome mas ainda não criou senha? Sugerimos criar (entrada fácil depois).
   const sugerirSenha = !precisaNome && profile && !profile.password_set;
+  // É super-admin? (mostra o atalho para os pedidos de acesso)
+  const { data: ehAdmin } = await supabase.rpc("is_super_admin");
 
   return (
     <>
@@ -59,6 +61,14 @@ export default async function Home() {
                 className="rounded-pauta border border-brand/40 bg-brand/10 p-3 text-sm text-[#d4aaff]"
               >
                 🔑 Crie sua senha de 6 dígitos para entrar mais fácil depois →
+              </Link>
+            )}
+            {ehAdmin && (
+              <Link
+                href="/admin"
+                className="rounded-pauta border border-line bg-surface p-3 text-sm font-semibold text-text"
+              >
+                🛡️ Pedidos de acesso (admin) →
               </Link>
             )}
             <MinhaAgenda userId={user.id} />
