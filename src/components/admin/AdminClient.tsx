@@ -59,6 +59,32 @@ export default function AdminClient({ inicial }: { inicial: Pedido[] }) {
     );
   }
 
+  // Exclui um pedido já tratado (limpa a tela) e remove o comprovante.
+  async function excluir(p: Pedido) {
+    if (
+      !window.confirm(
+        `Excluir o pedido de "${p.band_name}"? Remove também o comprovante.`,
+      )
+    )
+      return;
+    setErro(null);
+    setOcupado(p.id);
+    const supabase = createClient();
+    if (p.receipt_path) {
+      await supabase.storage.from("comprovantes").remove([p.receipt_path]);
+    }
+    const { error } = await supabase
+      .from("access_requests")
+      .delete()
+      .eq("id", p.id);
+    setOcupado(null);
+    if (error) {
+      setErro("Não consegui excluir. Tente de novo.");
+      return;
+    }
+    setPedidos((lista) => lista.filter((x) => x.id !== p.id));
+  }
+
   // Abre o comprovante (bucket privado) via URL assinada temporária.
   async function verComprovante(path: string) {
     setErro(null);
@@ -197,6 +223,14 @@ export default function AdminClient({ inicial }: { inicial: Pedido[] }) {
                 </div>
               </div>
             )}
+
+            <button
+              onClick={() => excluir(p)}
+              disabled={ocupado === p.id}
+              className="mt-3 text-xs text-busy underline disabled:opacity-60"
+            >
+              Excluir pedido
+            </button>
           </div>
         );
       })}
