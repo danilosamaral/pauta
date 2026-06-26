@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import Footer from "@/components/Footer";
 
 type Fase = "entrando" | "erro";
 
@@ -82,6 +83,8 @@ export default function ClaimInvite({ token }: { token: string }) {
           </Link>
         </>
       )}
+
+      <Footer />
     </main>
   );
 }

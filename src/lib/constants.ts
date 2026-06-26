@@ -21,3 +21,18 @@ export const PAISES: Pais[] = [
   { nome: "Paraguai", ddi: "+595", digitos: "595" },
 ];
 
+// Crédito do rodapé + contato.
+export const CREDITO_NOME = "Danilo Santos Amaral";
+export const CONTATO_WHATSAPP = "5567984541353"; // só dígitos, com código do país
+
+// Dados de cobrança (PIX). "chave" e os campos do BR Code são só dígitos/ASCII;
+// "*_visivel" é o que mostramos na tela.
+export const PIX = {
+  chave: "62966657000165", // chave PIX = CNPJ só dígitos
+  chaveVisivel: "62.966.657/0001-65",
+  nome: "Danilo Santos Amaral", // nome do recebedor (máx. 25 no BR Code)
+  cidade: "PONTA PORA", // máx. 15, sem acento (exigência do formato)
+  valor: "49.90", // valor no formato do BR Code
+  valorVisivel: "R$ 49,90",
+};
+
