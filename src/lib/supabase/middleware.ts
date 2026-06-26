@@ -55,7 +55,8 @@ export async function updateSession(request: NextRequest) {
   const ehRotaPublica =
     pathname.startsWith("/login") ||
     pathname.startsWith("/auth") ||
-    pathname.startsWith("/convite");
+    pathname.startsWith("/convite") ||
+    pathname.startsWith("/solicitar");
 
   // Não logado tentando acessar rota protegida -> manda pro login,
   // guardando o destino no parâmetro "next" (ex.: um link de convite).

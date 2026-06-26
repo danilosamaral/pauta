@@ -1,6 +1,7 @@
 "use client"; // Formulário interativo -> roda no navegador.
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { PAISES } from "@/lib/constants";
@@ -118,6 +119,13 @@ export default function LoginPage() {
         Primeira vez? Entre pelo <strong className="text-text">link de convite</strong>{" "}
         que o moderador te enviou — lá você cria sua senha. Esqueceu a senha?
         Peça um novo link pro moderador.
+      </p>
+
+      <p className="text-center text-xs text-dim">
+        Quer usar o Pauta com a sua banda?{" "}
+        <Link href="/solicitar" className="text-brand underline">
+          Solicitar acesso
+        </Link>
       </p>
     </main>
   );

@@ -23,6 +23,86 @@ export type Database = {
   }
   public: {
     Tables: {
+      access_requests: {
+        Row: {
+          band_name: string
+          created_at: string
+          id: string
+          message: string | null
+          name: string
+          phone: string
+          resulting_band_id: string | null
+          resulting_token: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+        }
+        Insert: {
+          band_name: string
+          created_at?: string
+          id?: string
+          message?: string | null
+          name: string
+          phone: string
+          resulting_band_id?: string | null
+          resulting_token?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+        }
+        Update: {
+          band_name?: string
+          created_at?: string
+          id?: string
+          message?: string | null
+          name?: string
+          phone?: string
+          resulting_band_id?: string | null
+          resulting_token?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "access_requests_resulting_band_id_fkey"
+            columns: ["resulting_band_id"]
+            isOneToOne: false
+            referencedRelation: "bands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "access_requests_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      app_admins: {
+        Row: {
+          created_at: string
+          profile_id: string
+        }
+        Insert: {
+          created_at?: string
+          profile_id: string
+        }
+        Update: {
+          created_at?: string
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "app_admins_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       availability: {
         Row: {
           created_at: string
@@ -289,6 +369,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      approve_access_request: { Args: { p_request_id: string }; Returns: Json }
       claim_invite: { Args: { invite_token: string }; Returns: Json }
       create_band: { Args: { p_name: string }; Returns: string }
       create_invite: {
@@ -303,8 +384,13 @@ export type Database = {
       }
       is_member_of: { Args: { b: string }; Returns: boolean }
       is_moderator_of: { Args: { b: string }; Returns: boolean }
+      is_super_admin: { Args: Record<PropertyKey, never>; Returns: boolean }
       leave_band: { Args: { p_band_id: string }; Returns: undefined }
       only_digits: { Args: { p: string }; Returns: string }
+      reject_access_request: {
+        Args: { p_request_id: string }
+        Returns: undefined
+      }
       set_member_role: {
         Args: { p_band_id: string; p_profile_id: string; p_role: string }
         Returns: undefined
