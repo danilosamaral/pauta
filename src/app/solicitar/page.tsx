@@ -20,6 +20,7 @@ export default function SolicitarPage() {
   const [nome, setNome] = useState("");
   const [banda, setBanda] = useState("");
   const [mensagem, setMensagem] = useState("");
+  const [arquivo, setArquivo] = useState<File | null>(null); // comprovante
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [enviado, setEnviado] = useState(false);
@@ -50,11 +51,30 @@ export default function SolicitarPage() {
 
     setEnviando(true);
     const supabase = createClient();
+
+    // 1) Se anexou comprovante, sobe primeiro para o bucket privado.
+    let receiptPath: string | null = null;
+    if (arquivo) {
+      const ext = arquivo.name.split(".").pop()?.toLowerCase() || "jpg";
+      const caminho = `${crypto.randomUUID()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("comprovantes")
+        .upload(caminho, arquivo, { upsert: false });
+      if (upErr) {
+        setEnviando(false);
+        setErro("Não consegui enviar o comprovante. Tente uma imagem menor (até 5MB).");
+        return;
+      }
+      receiptPath = caminho;
+    }
+
+    // 2) Grava o pedido (com o caminho do comprovante, se houver).
     const { error } = await supabase.from("access_requests").insert({
       name: nome.trim(),
       phone: telefone,
       band_name: banda.trim(),
       message: mensagem.trim() || null,
+      receipt_path: receiptPath,
     });
     setEnviando(false);
     if (error) {
@@ -189,6 +209,21 @@ export default function SolicitarPage() {
               placeholder="Conte rapidinho sobre a banda"
               className="mt-2 w-full rounded-lg border border-line bg-ink px-3 py-3 text-text outline-none focus:border-brand"
             />
+          </div>
+
+          <div>
+            <label className="text-sm text-dim">
+              Comprovante do PIX (imagem ou PDF)
+            </label>
+            <input
+              type="file"
+              accept="image/png,image/jpeg,image/webp,application/pdf"
+              onChange={(e) => setArquivo(e.target.files?.[0] ?? null)}
+              className="mt-2 w-full rounded-lg border border-line bg-ink px-3 py-2.5 text-sm text-dim file:mr-3 file:rounded-md file:border-0 file:bg-surface-2 file:px-3 file:py-1.5 file:text-text"
+            />
+            <p className="mt-1 text-xs text-dim">
+              Anexe o comprovante para agilizar a aprovação (até 5MB).
+            </p>
           </div>
 
           {erro && <p className="text-sm text-busy">{erro}</p>}
